@@ -21,7 +21,6 @@ class Providerr with ChangeNotifier {
 
   void setIndex(int index) {
     if (selectedIndex == index) {
-      // 👇 same "re-tap" logic
       if (index == 0 || index == 1) {
         scrollToTop();
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -35,6 +34,30 @@ class Providerr with ChangeNotifier {
     notifyListeners();
   }
 
+  bool _triger = true;
+  bool get triger => _triger;
+
+  void trigers(bool x) {
+    if (x == true) {
+      _triger = false;
+    } else {
+      _triger = true;
+    }
+    notifyListeners();
+  }
+
+  bool _editable = false;
+  bool get editable => _editable;
+
+  void iseditable(bool x) {
+    if (x == true) {
+      _editable = false;
+    } else {
+      _editable = true;
+    }
+    notifyListeners();
+  }
+
   final List<Post> _postlist = [];
   List<Post> get postlist => _postlist;
   final List<Post> _mypostlist = [];
@@ -43,7 +66,7 @@ class Providerr with ChangeNotifier {
   List<BookedPost> get bookedlist => _bookedlist;
   final List<BookedPost> _bookinglist = [];
   List<BookedPost> get bookinglist => _bookinglist;
-
+  Profiledetails? profiledetails;
   final List<File> _images = [];
   List<File> get images => _images;
 
@@ -59,6 +82,10 @@ class Providerr with ChangeNotifier {
   String get userrole => _userrole;
 
   File? _profilepicture;
+
+  String? selectedNationality;
+
+  String? selectedsex;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -164,7 +191,7 @@ class Providerr with ChangeNotifier {
 
   void setUserRole(String role) {
     _userrole = role;
-    notifyListeners(); // ⚡ This tells UI to rebuild
+    notifyListeners();
   }
 
   bool isAdmin() => _userrole == 'admin';
@@ -177,8 +204,6 @@ class Providerr with ChangeNotifier {
     String owenernumber,
     String oweneremail,
   ) async {
-    // Upload all selected images and save posts in DB
-    // await createPost(caption);
     final supabase = Supabase.instance.client;
     List<String> uploadedUrls = [];
     List<String> uploadedPaths = [];
@@ -197,18 +222,16 @@ class Providerr with ChangeNotifier {
         uploadedPaths.add(path);
       }
 
-      // Insert one post with image_urls as array
       await supabase.from('posts').insert({
         'userid': userid,
         'amount': amount,
-
         'poster_name': owenernmae,
         'oweneremail': oweneremail,
         'caption': caption,
         'owenerlocation': owenerlocation,
         'owenernumber': owenernumber,
         'image_urls': uploadedUrls,
-        'image_paths': uploadedPaths, // store paths too
+        'image_paths': uploadedPaths,
         'created_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
@@ -322,7 +345,7 @@ class Providerr with ChangeNotifier {
         final userdata = await Supabase.instance.client
             .from('profile')
             .select('username,role,userid,profile_pic')
-            .eq('userid', user.id) // use Firebase UID here
+            .eq('userid', user.id)
             .maybeSingle();
 
         if (userdata != null) {
@@ -345,15 +368,12 @@ class Providerr with ChangeNotifier {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvendraXZsdXdwcnBtZXJ2aWVvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDgwNzM3MiwiZXhwIjoyMDcwMzgzMzcyfQ.1jqy3Y5X2yVBLsrwMU8lhSKyYeO5uZiuGxUksPmJwy8', // full access
       );
 
-      // 1. Delete images from storage
       if (post.imagePaths.isNotEmpty) {
         await supabase.storage.from('rentpost').remove(post.imagePaths);
       }
 
-      // 2. Delete post row from table
       await supabase.from('posts').delete().eq('id', post.id);
 
-      // 3. Remove locally
       _postlist.removeWhere((p) => p.id == post.id);
 
       notifyListeners();
@@ -387,13 +407,13 @@ class Providerr with ChangeNotifier {
         'booker_location': location,
         'booker_gmail': bookeremail,
         'booker_number': bookernumber,
+        'bookdate': DateTime.now().toIso8601String(),
       });
 
       notifyListeners();
     } catch (e) {
       print('failed to book$e');
     }
-    fetchbookedspace();
   }
 
   Future<void> fetchbookedspace() async {
@@ -410,6 +430,7 @@ class Providerr with ChangeNotifier {
       booker_gmail,
       booker_number,
       owener_id,
+      bookdate,
       profile:owener_id(username,profile_pic),
       posts:postid(
         owenernumber,
@@ -418,12 +439,12 @@ class Providerr with ChangeNotifier {
         poster_name,
         amount,
         caption,
-        image_urls,
-        created_at
+        image_urls,created_at
+        
       )
     ''')
           .eq('owener_id', user!.id)
-          .order('id', ascending: false);
+          .order('bookdate', ascending: false);
 
       if (bookeddata != null) {
         _bookedlist.clear();
@@ -447,6 +468,7 @@ class Providerr with ChangeNotifier {
               bookernumber: item['booker_number'],
               caption: posts['caption'],
               profilrurl: profile['profile_pic'] ?? '',
+              bookdate: DateTime.parse(item['bookdate']),
               createdAt: DateTime.parse(posts['created_at']),
             ),
           );
@@ -473,6 +495,7 @@ class Providerr with ChangeNotifier {
       booker_gmail,
       booker_number,
       owener_id,
+      bookdate,
       profile:owener_id(username,profile_pic),
       posts:postid(
         owenernumber,
@@ -482,11 +505,11 @@ class Providerr with ChangeNotifier {
         amount,
         caption,
         image_urls,
-        created_at
+      created_at
       )
     ''')
           .eq('booker_account', user!.email.toString())
-          .order('id', ascending: false);
+          .order('bookdate', ascending: false);
 
       if (bookeddata != null) {
         _bookinglist.clear();
@@ -510,6 +533,7 @@ class Providerr with ChangeNotifier {
               bookernumber: item['booker_number'],
               caption: posts['caption'],
               profilrurl: profile['profile_pic'] ?? '',
+              bookdate: DateTime.parse(item['bookdate']),
               createdAt: DateTime.parse(posts['created_at']),
             ),
           );
@@ -528,10 +552,6 @@ class Providerr with ChangeNotifier {
         'https://pozwkivluwprpmervieo.supabase.co',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvendraXZsdXdwcnBtZXJ2aWVvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDgwNzM3MiwiZXhwIjoyMDcwMzgzMzcyfQ.1jqy3Y5X2yVBLsrwMU8lhSKyYeO5uZiuGxUksPmJwy8', // full access
       );
-
-      // 1. Delete images from storage
-
-      // 2. Delete post row from table
       await supabase.from('bookedspace').delete().eq('id', post.id);
       final check = await supabase
           .from('bookedspace')
@@ -539,12 +559,95 @@ class Providerr with ChangeNotifier {
           .eq('id', post.id);
       print(check);
 
-      // 3. Remove locally
       _bookedlist.removeWhere((p) => p.id == post.id);
 
       notifyListeners();
     } catch (e) {
       'failed to delete';
     }
+  }
+
+  Future<void> updateProfileInfo(
+    TextEditingController firstname,
+    TextEditingController lastname,
+    TextEditingController email,
+    TextEditingController age,
+    String sex,
+    String nationality,
+    TextEditingController phone,
+    TextEditingController location,
+  ) async {
+    try {
+      final supa = Supabase.instance.client;
+      final user = supa.auth.currentUser;
+      final existing = await supa
+          .from('profileDetails')
+          .select()
+          .eq('userid', user!.id);
+
+      if (existing.isEmpty) {
+        await supa.from('profileDetails').insert({
+          'userid': user.id,
+          'firstname': firstname.text,
+          'lastname': lastname.text,
+          'email_address': email.text,
+          'age': int.tryParse(age.text),
+          'sex': sex,
+          'Nationality': nationality,
+          'phonenumber': int.tryParse(phone.text),
+          'location': location.text,
+        });
+      } else {
+        await supa
+            .from('profileDetails')
+            .update({
+              'firstname': firstname.text,
+              'lastname': lastname.text,
+              'email_address': email.text,
+              'age': int.tryParse(age.text),
+              'sex': sex,
+              'Nationality': nationality,
+              'phonenumber': int.tryParse(phone.text),
+              'location': location.text,
+            })
+            .eq('userid', user.id);
+      }
+    } catch (e) {
+      print('Failed to update profile: $e');
+    }
+    await fetchprofileinfo();
+  }
+
+  Future<void> fetchprofileinfo() async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+    try {
+      final userprofiledata = await Supabase.instance.client
+          .from('profileDetails')
+          .select()
+          .eq('userid', user!.id);
+
+      if (userprofiledata != null && userprofiledata.isNotEmpty) {
+        for (var item in userprofiledata) {
+          profiledetails = Profiledetails(
+            id: item['id'],
+            age: item['age'] != null ? int.tryParse(item['age'].toString()) : 0,
+            email: item['email_address'] ?? '',
+            firstname: item['firstname'] ?? '',
+            lastname: item['lastname'] ?? '',
+            sex: item['sex'] ?? '',
+            location: item['location'] ?? '',
+            nationality: item['Nationality'] ?? '',
+            number: item['phonenumber'] != null
+                ? int.tryParse(item['phonenumber'].toString())
+                : 0,
+          );
+        }
+      }
+    } catch (e) {
+      print('No data fetch: $e');
+    }
+
+    notifyListeners();
   }
 }

@@ -134,7 +134,7 @@ class _SignuppageState extends State<Signuppage> {
                                 userId.toString(),
                                 usernamecontroller.text.trim(),
                               );
-
+                              if (!context.mounted) return;
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
@@ -150,7 +150,7 @@ class _SignuppageState extends State<Signuppage> {
                               passwordcontroller.clear();
                               usernamecontroller.clear();
 
-                              /// Navigate to Signin
+                              if (!context.mounted) return;
                               Navigator.pushReplacement(
                                 context,
                                 PageRouteBuilder(
@@ -168,7 +168,7 @@ class _SignuppageState extends State<Signuppage> {
                                 ),
                               );
                             } catch (e) {
-                              if (mounted) {
+                              if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(

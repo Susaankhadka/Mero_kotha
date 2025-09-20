@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mero_kotha/modelclass/modelclass.dart';
@@ -7,11 +8,8 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class ReviewPage extends StatelessWidget {
   final TextEditingController bookercontroller;
-
   final TextEditingController locationcontroller;
-
   final TextEditingController numbercontroller;
-
   final TextEditingController bookeremailcontroller;
   const ReviewPage({
     super.key,
@@ -25,6 +23,8 @@ class ReviewPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final controller=PageController();
+    print('reviewpage');
     return Scaffold(
       appBar: AppBar(title: Text('Review page')),
       body: SingleChildScrollView(
@@ -44,32 +44,35 @@ class ReviewPage extends StatelessWidget {
                         ),
                         child: ClipOval(
                           child: value.profilepic.isNotEmpty
-                              ? Image.network(
-                                  post.profilepicurl,
-                                  loadingBuilder:
-                                      (context, child, loadingProgress) {
-                                        if (loadingProgress == null) {
-                                          return child;
-                                        }
-                                        return const Center(
-                                          child: CupertinoActivityIndicator(
-                                            radius: 12,
-                                          ),
-                                        );
-                                      },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Center(
-                                      child: Icon(
-                                        Icons.broken_image,
-                                        color: Colors.red,
-                                      ),
-                                    );
-                                  },
+                              ? SizedBox(
                                   width: 50,
                                   height: 50,
-                                  fit: BoxFit.cover,
+                                  child: CachedNetworkImage(
+                                    imageUrl: post.profilepicurl,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => const Center(
+                                      child: CupertinoActivityIndicator(
+                                        radius: 12,
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        const Center(
+                                          child: Icon(
+                                            Icons.broken_image,
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                  ),
                                 )
-                              : CupertinoActivityIndicator(),
+                              : const SizedBox(
+                                  width: 50,
+                                  height: 50,
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 30,
+                                    color: Colors.grey,
+                                  ),
+                                ),
                         ),
                       );
                     },
@@ -87,6 +90,14 @@ class ReviewPage extends StatelessWidget {
                       ],
                     ),
                   ),
+                  Spacer(),
+                  Bookedbutton(
+                    post: post,
+                    bookercontroller: bookercontroller,
+                    bookeremailcontroller: bookeremailcontroller,
+                    locationcontroller: locationcontroller,
+                    numbercontroller: numbercontroller,
+                  ),
                 ],
               ),
             ),
@@ -99,36 +110,56 @@ class ReviewPage extends StatelessWidget {
                 ),
               ],
             ),
+            // Card(
+            //   child: SizedBox(
+            //     height: 300,
+            //     width: double.infinity,
+            //     child: PageView.builder(
+            //       itemCount: post.postimg.length,
+            //       itemBuilder: (context, i) {
+            //         return CachedNetworkImage(
+            //           imageUrl: post.postimg[i],
+            //           fit: BoxFit.cover,
+            //           placeholder: (context, url) => const Center(
+            //             child: CupertinoActivityIndicator(radius: 12),
+            //           ),
+            //           errorWidget: (context, url, error) => const Center(
+            //             child: Icon(Icons.broken_image, color: Colors.red),
+            //           ),
+            //         );
+            //       },
+            //     ),
+            //   ),
+            // ),
             Card(
               child: SizedBox(
-                height: 250,
+                height: 300,
                 width: double.infinity,
                 child: PageView.builder(
-                  controller: PageController(),
+                  controller: controller,
                   itemCount: post.postimg.length,
                   itemBuilder: (context, i) {
-                    return Image.network(
-                      post.postimg[i],
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(
-                          child: CupertinoActivityIndicator(radius: 12),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Center(
-                          child: Icon(Icons.broken_image, color: Colors.red),
-                        );
-                      },
+                    return InteractiveViewer(
+                      panEnabled: true, // allows moving the image
+                      minScale: 1,
+                      maxScale: 4,
+                      child: CachedNetworkImage(
+                        imageUrl: post.postimg[i],
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) =>
+                            Center(child: CupertinoActivityIndicator()),
+                        errorWidget: (context, url, error) =>
+                            Center(child: Icon(Icons.broken_image, color: Colors.red)),
+                      ),
                     );
                   },
                 ),
               ),
             ),
+
             SizedBox(height: 10),
             SmoothPageIndicator(
-              controller: PageController(),
+              controller:controller,
               count: post.postimg.length,
               effect: WormEffect(
                 dotHeight: 8,
@@ -144,15 +175,11 @@ class ReviewPage extends StatelessWidget {
                   slots: 'PosterName',
                   values: post.postername,
                 ),
-                Row(
-                  children: [
-                    OwenerbookerDetails(
-                      slots: 'Ammount Rs',
-                      values: post.ammount.toString(),
-                    ),
-                    Text('/-'),
-                  ],
+                OwenerbookerDetails(
+                  slots: 'Amount',
+                  values: 'Rs ${post.ammount.toString()} /-',
                 ),
+
                 OwenerbookerDetails(
                   slots: 'Email Address',
                   values: post.oweneremail,
@@ -164,13 +191,6 @@ class ReviewPage extends StatelessWidget {
                 OwenerbookerDetails(
                   slots: 'Location',
                   values: post.owenerlocation,
-                ),
-                Bookedbutton(
-                  post: post,
-                  bookercontroller: bookercontroller,
-                  bookeremailcontroller: bookeremailcontroller,
-                  locationcontroller: locationcontroller,
-                  numbercontroller: numbercontroller,
                 ),
               ],
             ),

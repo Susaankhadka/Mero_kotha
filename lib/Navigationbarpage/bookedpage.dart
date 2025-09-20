@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mero_kotha/modelclass/modelclass.dart';
@@ -16,9 +17,12 @@ class _BookedpageState extends State<Bookedpage> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () => Provider.of<Providerr>(context, listen: false).fetchbookedspace(),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        if (!mounted) return;
+        Provider.of<Providerr>(context, listen: false).fetchbookedspace();
+      });
+    });
   }
 
   @override
@@ -32,12 +36,7 @@ class _BookedpageState extends State<Bookedpage> {
             return RefreshIndicator(
               elevation: 0,
               backgroundColor: Colors.transparent,
-              onRefresh: () => Future.microtask(
-                () => Provider.of<Providerr>(
-                  context,
-                  listen: false,
-                ).fetchbookedspace(),
-              ),
+              onRefresh: () => value.fetchbookedspace(),
               child: SingleChildScrollView(
                 controller: value.scrollController,
                 child: value.bookedlist.isEmpty
@@ -88,46 +87,49 @@ class _BookedpageState extends State<Bookedpage> {
                                                         post
                                                             .profilrurl
                                                             .isNotEmpty
-                                                        ? Image.network(
-                                                            post.profilrurl,
-                                                            loadingBuilder:
-                                                                (
-                                                                  context,
-                                                                  child,
-                                                                  loadingProgress,
-                                                                ) {
-                                                                  if (loadingProgress ==
-                                                                      null) {
-                                                                    return child;
-                                                                  }
-                                                                  return const Center(
+                                                        ? SizedBox(
+                                                            width: 50,
+                                                            height: 50,
+                                                            child: CachedNetworkImage(
+                                                              imageUrl: post
+                                                                  .profilrurl,
+                                                              fit: BoxFit.cover,
+                                                              placeholder:
+                                                                  (
+                                                                    context,
+                                                                    url,
+                                                                  ) => const Center(
                                                                     child:
                                                                         CupertinoActivityIndicator(
                                                                           radius:
                                                                               12,
                                                                         ),
-                                                                  );
-                                                                },
-                                                            errorBuilder:
-                                                                (
-                                                                  context,
-                                                                  error,
-                                                                  stackTrace,
-                                                                ) {
-                                                                  return const Center(
+                                                                  ),
+                                                              errorWidget:
+                                                                  (
+                                                                    context,
+                                                                    url,
+                                                                    error,
+                                                                  ) => const Center(
                                                                     child: Icon(
                                                                       Icons
                                                                           .broken_image,
                                                                       color: Colors
                                                                           .red,
                                                                     ),
-                                                                  );
-                                                                },
+                                                                  ),
+                                                            ),
+                                                          )
+                                                        : const SizedBox(
                                                             width: 50,
                                                             height: 50,
-                                                            fit: BoxFit.cover,
-                                                          )
-                                                        : CupertinoActivityIndicator(),
+                                                            child: Icon(
+                                                              Icons.person,
+                                                              size: 30,
+                                                              color:
+                                                                  Colors.grey,
+                                                            ),
+                                                          ),
                                                   ),
                                                 );
                                               },
@@ -241,11 +243,12 @@ class _BookedpageState extends State<Bookedpage> {
                                                                                 context,
                                                                               );
                                                                             },
-                                                                            child: Text(
-                                                                              "Delete",
-                                                                            ),
+
                                                                             style: ElevatedButton.styleFrom(
                                                                               backgroundColor: Colors.red,
+                                                                            ),
+                                                                            child: Text(
+                                                                              "Delete",
                                                                             ),
                                                                           ),
                                                                         ],
@@ -298,58 +301,32 @@ class _BookedpageState extends State<Bookedpage> {
                                       ),
                                     ],
                                   ),
-
                                   Card(
                                     child: SizedBox(
-                                      height: 200,
+                                      height: 300,
                                       width: double.infinity,
                                       child: PageView.builder(
                                         controller: controller,
-                                        itemCount: post.postimg.isNotEmpty
-                                            ? post.postimg.length
-                                            : 1,
+                                        itemCount: post.postimg.length,
                                         itemBuilder: (context, i) {
-                                          final imageUrl =
-                                              post.postimg.isNotEmpty
-                                              ? post.postimg[i]
-                                              : "";
-
-                                          if (imageUrl.isEmpty) {
-                                            return const Center(
-                                              child: Icon(
-                                                Icons.broken_image,
-                                                color: Colors.red,
-                                              ),
-                                            );
-                                          }
-
-                                          return Image.network(
-                                            imageUrl,
+                                          return CachedNetworkImage(
+                                            imageUrl: post.postimg[i],
                                             fit: BoxFit.cover,
-                                            loadingBuilder:
-                                                (
-                                                  context,
-                                                  child,
-                                                  loadingProgress,
-                                                ) {
-                                                  if (loadingProgress == null)
-                                                    return child;
-                                                  return const Center(
-                                                    child:
-                                                        CupertinoActivityIndicator(
-                                                          radius: 12,
-                                                        ),
-                                                  );
-                                                },
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                                  return const Center(
-                                                    child: Icon(
-                                                      Icons.broken_image,
-                                                      color: Colors.red,
+                                            placeholder: (context, url) =>
+                                                const Center(
+                                                  child:
+                                                      CupertinoActivityIndicator(
+                                                        radius: 12,
+                                                      ),
+                                                ),
+                                            errorWidget:
+                                                (context, url, error) =>
+                                                    const Center(
+                                                      child: Icon(
+                                                        Icons.broken_image,
+                                                        color: Colors.red,
+                                                      ),
                                                     ),
-                                                  );
-                                                },
                                           );
                                         },
                                       ),
@@ -390,44 +367,45 @@ class _BookedpageState extends State<Bookedpage> {
                                     ],
                                   ),
 
-                                  Column(
-                                    children: [
-                                      Row(
-                                        children: [
-                                          OwenerbookerDetails(
-                                            slots: 'Amount Rs',
-                                            values: post.amount.toString(),
-                                          ),
-                                          Text('/-'),
-                                        ],
-                                      ),
-                                      OwenerbookerDetails(
-                                        slots: 'Name',
-                                        values: post.bookername,
-                                      ),
-                                      OwenerbookerDetails(
-                                        slots: 'Account Name',
-                                        values: value.username,
-                                      ),
-                                      OwenerbookerDetails(
-                                        slots: 'Email Address',
-                                        values: post.bookergmail,
-                                      ),
-                                      OwenerbookerDetails(
-                                        slots: 'Contact Number',
-                                        values: post.bookernumber,
-                                      ),
-                                      OwenerbookerDetails(
-                                        slots: 'Location',
-                                        values: post.bookerlocation,
-                                      ),
-                                      OwenerbookerDetails(
-                                        slots: 'Booked Date',
-                                        values: post.createdAt
-                                            .toString()
-                                            .substring(0, 19),
-                                      ),
-                                    ],
+                                  SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        OwenerbookerDetails(
+                                          slots: 'Amount',
+                                          values:
+                                              'Rs ${post.amount.toString()} /-',
+                                        ),
+
+                                        OwenerbookerDetails(
+                                          slots: 'Name',
+                                          values: post.bookername,
+                                        ),
+                                        OwenerbookerDetails(
+                                          slots: 'Account Name',
+                                          values: value.username,
+                                        ),
+                                        OwenerbookerDetails(
+                                          slots: 'Email Address',
+                                          values: post.bookergmail,
+                                        ),
+                                        OwenerbookerDetails(
+                                          slots: 'Contact Number',
+                                          values: post.bookernumber,
+                                        ),
+                                        OwenerbookerDetails(
+                                          slots: 'Location',
+                                          values: post.bookerlocation,
+                                        ),
+                                        OwenerbookerDetails(
+                                          slots: 'Booked Date',
+                                          values:
+                                              'Date: ${post.bookdate.toString().substring(0, 10)}\nTime: ${post.bookdate.toString().substring(11, 19)}',
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                   SizedBox(height: 15),
                                 ],
@@ -441,6 +419,7 @@ class _BookedpageState extends State<Bookedpage> {
           },
         ),
       ),
+
       floatingActionButton: providerr.ismore()
           ? FloatingActionButton(
               onPressed: () {

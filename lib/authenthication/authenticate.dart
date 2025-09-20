@@ -4,9 +4,11 @@ import 'package:mero_kotha/authenthication/introscreen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Isauthenticate extends StatelessWidget {
-  final supabase = Supabase.instance.client;
+  const Isauthenticate({super.key});
 
+  @override
   Widget build(BuildContext context) {
+    final supabase = Supabase.instance.client;
     if (supabase.auth.currentUser != null) {
       return IntroscreenafterLogin();
     } else {

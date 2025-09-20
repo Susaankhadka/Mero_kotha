@@ -1,7 +1,9 @@
 // import 'package:flutter/cupertino.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:get/utils.dart';
 import 'package:mero_kotha/Homescreen/Homepage.dart';
 import 'package:mero_kotha/authenthication/googleservice.dart';
 import 'package:mero_kotha/stagemanagement/statemanagement.dart';
@@ -126,12 +128,35 @@ class _SigninpageState extends State<Signinpage> {
                                     ),
                                     const SizedBox(height: 10),
                                     TextFormField(
+                                      onChanged: (value) => setState(() {}),
                                       controller: passwordcontroller,
-                                      obscureText: true,
-                                      decoration: const InputDecoration(
-                                        prefixIcon: Icon(Icons.lock),
-                                        border: OutlineInputBorder(),
-                                        hintText: 'Password',
+                                      obscureText: providerr.triger,
+                                      decoration: InputDecoration(
+                                        prefixIcon: const Icon(Icons.lock),
+                                        border: const OutlineInputBorder(),
+                                        suffixIcon: IconButton(
+                                          splashColor: Colors.transparent,
+                                          highlightColor: Colors.transparent,
+                                          color: Color.fromARGB(98, 0, 0, 4),
+                                          onPressed: () => providerr.trigers(
+                                            providerr.triger,
+                                          ),
+                                          icon:
+                                              passwordcontroller.text
+                                                  .toString()
+                                                  .isNotEmpty
+                                              ? providerr.triger
+                                                    ? Icon(
+                                                        Icons.visibility_off,
+                                                        size: 22,
+                                                      )
+                                                    : Icon(
+                                                        Icons.visibility,
+                                                        size: 22,
+                                                      )
+                                              : SizedBox.shrink(),
+                                        ),
+                                        labelText: 'Password',
                                       ),
                                       validator: (value) {
                                         if (value == null || value.isEmpty) {
@@ -170,6 +195,8 @@ class _SigninpageState extends State<Signinpage> {
 
                                       // Don't navigate here, let onAuthStateChange handle it
                                     } on AuthException catch (e) {
+                                      if (!context.mounted) return;
+
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -295,6 +322,7 @@ class _SigninpageState extends State<Signinpage> {
                                       await authenticateWithGoogle();
                                       // No need to navigate here, onAuthStateChange will handle it
                                     } catch (e) {
+                                      if (!context.mounted) return;
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(

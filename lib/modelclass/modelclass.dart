@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mero_kotha/Navigationbarpage/reviewpage.dart';
@@ -5,6 +6,30 @@ import 'package:mero_kotha/stagemanagement/statemanagement.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+class Profiledetails {
+  int id;
+  int? age;
+  String? lastname;
+  String? firstname;
+  String? nationality;
+  String? sex;
+  String? email;
+  String? location;
+  int? number;
+
+  Profiledetails({
+    required this.id,
+    this.age,
+    this.email,
+    this.firstname,
+    this.lastname,
+    this.location,
+    this.nationality,
+    this.number,
+    this.sex,
+  });
+}
 
 class Post {
   final int id;
@@ -55,7 +80,7 @@ class BookedPost {
   final List<String> postimg; // URLs
   final String profilrurl;
   final String caption;
-
+  final DateTime bookdate;
   final DateTime createdAt;
 
   BookedPost({
@@ -74,6 +99,7 @@ class BookedPost {
     required this.bookernumber,
     required this.caption,
     required this.profilrurl,
+    required this.bookdate,
     required this.createdAt,
   });
 }
@@ -165,44 +191,46 @@ class _AllRecentPostState extends State<AllRecentPost> {
                                           ),
                                           child: ClipOval(
                                             child: value.profilepic.isNotEmpty
-                                                ? Image.network(
-                                                    post.profilepicurl,
-                                                    loadingBuilder:
-                                                        (
-                                                          context,
-                                                          child,
-                                                          loadingProgress,
-                                                        ) {
-                                                          if (loadingProgress ==
-                                                              null) {
-                                                            return child;
-                                                          }
-                                                          return const Center(
+                                                ? SizedBox(
+                                                    width: 50,
+                                                    height: 50,
+                                                    child: CachedNetworkImage(
+                                                      imageUrl:
+                                                          post.profilepicurl,
+                                                      fit: BoxFit.cover,
+                                                      placeholder:
+                                                          (
+                                                            context,
+                                                            url,
+                                                          ) => const Center(
                                                             child:
                                                                 CupertinoActivityIndicator(
                                                                   radius: 12,
                                                                 ),
-                                                          );
-                                                        },
-                                                    errorBuilder:
-                                                        (
-                                                          context,
-                                                          error,
-                                                          stackTrace,
-                                                        ) {
-                                                          return const Center(
+                                                          ),
+                                                      errorWidget:
+                                                          (
+                                                            context,
+                                                            url,
+                                                            error,
+                                                          ) => const Center(
                                                             child: Icon(
                                                               Icons
                                                                   .broken_image,
                                                               color: Colors.red,
                                                             ),
-                                                          );
-                                                        },
+                                                          ),
+                                                    ),
+                                                  )
+                                                : const SizedBox(
                                                     width: 50,
                                                     height: 50,
-                                                    fit: BoxFit.cover,
-                                                  )
-                                                : CupertinoActivityIndicator(),
+                                                    child: Icon(
+                                                      Icons.person,
+                                                      size: 30,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
                                           ),
                                         );
                                       },
@@ -390,8 +418,8 @@ class _AllRecentPostState extends State<AllRecentPost> {
                               ),
                             ],
                           ),
-
                           Card(
+                            shape: RoundedRectangleBorder(),
                             child: SizedBox(
                               height: 300,
                               width: double.infinity,
@@ -399,28 +427,21 @@ class _AllRecentPostState extends State<AllRecentPost> {
                                 controller: controller,
                                 itemCount: post.postimg.length,
                                 itemBuilder: (context, i) {
-                                  return Image.network(
-                                    post.postimg[i],
-                                    fit: BoxFit.cover,
-                                    loadingBuilder:
-                                        (context, child, loadingProgress) {
-                                          if (loadingProgress == null) {
-                                            return child;
-                                          }
-                                          return const Center(
-                                            child: CupertinoActivityIndicator(
-                                              radius: 12,
-                                            ),
-                                          );
-                                        },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Center(
-                                        child: Icon(
-                                          Icons.broken_image,
-                                          color: Colors.red,
+                                  return CachedNetworkImage(
+                                    imageUrl: post.postimg[i],
+                                    fit: BoxFit.contain,
+                                    placeholder: (context, url) => const Center(
+                                      child: CupertinoActivityIndicator(
+                                        radius: 12,
+                                      ),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        const Center(
+                                          child: Icon(
+                                            Icons.broken_image,
+                                            color: Colors.red,
+                                          ),
                                         ),
-                                      );
-                                    },
                                   );
                                 },
                               ),
@@ -596,8 +617,6 @@ class SettingBlocks extends StatelessWidget {
   }
 }
 
-class OwenerbookerDetail {}
-
 class OwenerbookerDetails extends StatelessWidget {
   final String slots;
   final String values;
@@ -609,56 +628,35 @@ class OwenerbookerDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(),
       child: Row(
         children: [
-          Text(
-            slots,
-            style: TextStyle(
-              color: Color.fromARGB(233, 250, 155, 2),
-              fontWeight: FontWeight.bold,
+          Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.3,
+              child: Text(
+                slots,
+                style: TextStyle(
+                  color: Color.fromARGB(233, 250, 155, 2),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
           Text(': '),
-          Text(values),
+          SizedBox(
+            width: MediaQuery.of(context).size.width * 0.55,
+            child: Text(values),
+          ),
         ],
       ),
     );
   }
 }
 
-// class SettingBlocks extends StatelessWidget {
-//   final String settingname;
-//   final Icon icons;
-//   const SettingBlocks({
-//     required this.settingname,
-//     required this.icons,
-//     super.key,
-//   });
-
-//   @override
-//   Widget build(BuildContext context) {
-
-//     // return Padding(
-//     //   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-//     //   child: Card(
-//     //     child: Padding(
-//     //       padding: const EdgeInsets.all(14.0),
-//     //       child: Row(
-//     //         children: [
-//     //           icons,
-//     //           SizedBox(width: 10),
-//     //           Text(settingname),
-//     //           Spacer(),
-//     //           Icon(Icons.arrow_forward_ios, size: 15),
-//     //         ],
-//     //       ),
-//     //     ),
-//     //   ),
-//     // );
-//   }
-// }
 class Bookedbutton extends StatelessWidget {
   final Post post;
   final _formkey = GlobalKey<FormState>();
@@ -695,215 +693,284 @@ class Bookedbutton extends StatelessWidget {
             showModalBottomSheet(
               context: context,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
               ),
               builder: (BuildContext context) {
                 return SingleChildScrollView(
-                  child: Container(
-                    padding: EdgeInsets.all(16),
-                    height: MediaQuery.of(context).size.height * 0.8,
+                  child: SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.65,
                     width: double.infinity,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Text(
-                            'Fill Details',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                        SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Text(
+                              'Fill Details',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                        ),
-                        Form(
-                          key: _formkey,
-                          child: Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                ),
-                                child: TextFormField(
-                                  controller: bookercontroller,
 
-                                  decoration: InputDecoration(
-                                    prefixIcon: Icon(Icons.person),
-                                    hintText: 'Name',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your Name';
-                                    }
-                                    return null;
-                                  },
-                                ),
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                overlayColor: Colors.transparent,
                               ),
-                              SizedBox(height: 10),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                ),
-                                child: TextFormField(
-                                  controller: bookeremailcontroller,
-                                  keyboardType: TextInputType.emailAddress,
-                                  decoration: InputDecoration(
-                                    prefixIcon: Icon(Icons.email),
-                                    hintText: 'Email',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return "Email is required";
-                                    }
-                                    // ✅ Regular email pattern
-                                    String pattern =
-                                        r'^[a-zA-Z0-9._%+-]+@gmail\.com$';
-                                    RegExp regex = RegExp(pattern);
+                              onPressed: () {
+                                if (_formkey.currentState!.validate()) {
+                                  Navigator.pop(context);
 
-                                    if (!regex.hasMatch(value)) {
-                                      return "Enter a valid Gmail address";
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              SizedBox(height: 10),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                ),
-
-                                child: TextFormField(
-                                  controller: numbercontroller,
-                                  keyboardType: TextInputType.number,
-                                  decoration: InputDecoration(
-                                    prefixIcon: Icon(Icons.phone),
-                                    border: OutlineInputBorder(),
-                                    hintText: 'Phone Number',
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return "Phone number is required";
-                                    }
-
-                                    // ✅ Regex for 10 digits starting with 97 or 98
-                                    String pattern = r'^(97|98)\d{8}$';
-                                    RegExp regex = RegExp(pattern);
-
-                                    if (!regex.hasMatch(value)) {
-                                      return "Enter a valid 10-digit number starting with 97 or 98";
-                                    }
-
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              SizedBox(height: 10),
-
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                ),
-
-                                child: TextFormField(
-                                  controller: locationcontroller,
-                                  decoration: InputDecoration(
-                                    prefixIcon: Icon(Icons.location_on),
-                                    border: OutlineInputBorder(),
-                                    hintText: 'Location',
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your location';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              SizedBox(height: 10),
-                            ],
-                          ),
-                        ),
-
-                        TextButton(
-                          style: TextButton.styleFrom(
-                            overlayColor:
-                                Colors.transparent, // 👈 removes ripple/splash
-                          ),
-                          onPressed: () {
-                            if (_formkey.currentState!.validate()) {
-                              Navigator.pop(context);
-
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return AlertDialog(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    title: Text("Book now"),
-                                    content: Text(
-                                      "Are you sure you want to Book this space?",
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.pop(
-                                            context,
-                                          ); //  Cancel, just close
-                                        },
-                                        child: Text("Cancel"),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () async {
-                                          await value.bookedspace(
-                                            post,
-                                            bookercontroller.text.toString(),
-                                            locationcontroller.text.toString(),
-                                            numbercontroller.text.toString(),
-                                            bookeremailcontroller.text
-                                                .toString(),
-                                          );
-                                          bookercontroller.clear();
-                                          bookeremailcontroller.clear();
-                                          numbercontroller.clear();
-                                          locationcontroller.clear();
-                                          Navigator.pop(context);
-                                        },
-                                        child: Text("Book"),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red,
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                         ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              );
-                            }
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12.0,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Icon(
-                                  Icons.send,
-                                  color: Color.fromARGB(255, 1, 88, 26),
-                                  size: 22,
-                                ),
-                                SizedBox(width: 10),
+                                        title: Text("Book now"),
+                                        content: Text(
+                                          "Are you sure you want to Book this space?",
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.pop(
+                                                context,
+                                              ); //  Cancel, just close
+                                            },
+                                            child: Text("Cancel"),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () async {
+                                              await value.bookedspace(
+                                                post,
+                                                bookercontroller.text
+                                                    .toString(),
+                                                locationcontroller.text
+                                                    .toString(),
+                                                numbercontroller.text
+                                                    .toString(),
+                                                bookeremailcontroller.text
+                                                    .toString(),
+                                              );
+                                              if (!context.mounted) return;
+                                              bookercontroller.clear();
+                                              bookeremailcontroller.clear();
+                                              numbercontroller.clear();
+                                              locationcontroller.clear();
+                                              Navigator.pop(context);
+                                            },
 
-                                Text(
-                                  'Submit',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                            ),
+                                            child: Text("Book"),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                }
+                              },
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Icon(
+                                    Icons.send,
+                                    color: Color.fromARGB(255, 1, 88, 26),
+                                    size: 22,
+                                  ),
+                                  SizedBox(width: 10),
+
+                                  Text(
+                                    'Submit',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Form(
+                            key: _formkey,
+                            child: Column(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+                                  child: TextFormField(
+                                    controller: bookercontroller,
+
+                                    decoration: InputDecoration(
+                                      prefixIcon: Icon(Icons.person),
+                                      labelText: 'Enter your Name',
+                                      filled: true,
+                                      fillColor: Color.fromARGB(
+                                        255,
+                                        255,
+                                        255,
+                                        255,
+                                      ),
+                                      focusedErrorBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Please enter your Name';
+                                      }
+                                      return null;
+                                    },
                                   ),
                                 ),
+                                SizedBox(height: 10),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+                                  child: TextFormField(
+                                    controller: bookeremailcontroller,
+                                    keyboardType: TextInputType.emailAddress,
+                                    decoration: InputDecoration(
+                                      prefixIcon: Icon(Icons.email),
+                                      labelText: 'Email Address',
+                                      filled: true,
+                                      fillColor: Color.fromARGB(
+                                        255,
+                                        255,
+                                        255,
+                                        255,
+                                      ),
+                                      focusedErrorBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return "Email is required";
+                                      }
+                                      // ✅ Regular email pattern
+                                      String pattern =
+                                          r'^[a-zA-Z0-9._%+-]+@gmail\.com$';
+                                      RegExp regex = RegExp(pattern);
+
+                                      if (!regex.hasMatch(value)) {
+                                        return "Enter a valid Gmail address";
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                SizedBox(height: 10),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+
+                                  child: TextFormField(
+                                    controller: numbercontroller,
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(
+                                      prefixIcon: Icon(Icons.phone),
+                                      labelText: 'Phone Number',
+                                      filled: true,
+                                      fillColor: Color.fromARGB(
+                                        255,
+                                        255,
+                                        255,
+                                        255,
+                                      ),
+                                      focusedErrorBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return "Phone number is required";
+                                      }
+
+                                      // ✅ Regex for 10 digits starting with 97 or 98
+                                      String pattern = r'^(97|98)\d{8}$';
+                                      RegExp regex = RegExp(pattern);
+
+                                      if (!regex.hasMatch(value)) {
+                                        return "Enter a valid 10-digit number starting with 97 or 98";
+                                      }
+
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                SizedBox(height: 10),
+
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+
+                                  child: TextFormField(
+                                    controller: locationcontroller,
+                                    decoration: InputDecoration(
+                                      prefixIcon: Icon(Icons.location_on),
+                                      labelText: 'Location',
+                                      filled: true,
+                                      fillColor: Color.fromARGB(
+                                        255,
+                                        255,
+                                        255,
+                                        255,
+                                      ),
+                                      focusedErrorBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Please enter your location';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                SizedBox(height: 10),
                               ],
                             ),
                           ),
@@ -924,6 +991,8 @@ class Bookedbutton extends StatelessWidget {
     );
   }
 }
+
+Color textfillcolor = Color.fromARGB(255, 215, 209, 209);
 
 class ActionButton extends StatelessWidget {
   final IconData icon;
@@ -949,15 +1018,15 @@ class ActionButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: MediaQuery.of(context).size.height * 0.15,
-        width: 100,
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        width: MediaQuery.of(context).size.width * 0.28,
+        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
+              color: const Color.fromARGB(136, 158, 158, 158),
               spreadRadius: 2,
               blurRadius: 6,
               offset: Offset(0, 3), // shadow position
@@ -967,7 +1036,11 @@ class ActionButton extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 28, color: iconColor),
+            Icon(
+              icon,
+              size: MediaQuery.of(context).size.height * 0.040,
+              color: iconColor,
+            ),
             const SizedBox(height: 8),
             Text(
               label,
@@ -975,7 +1048,7 @@ class ActionButton extends StatelessWidget {
               style: TextStyle(
                 color: textColor,
                 fontWeight: FontWeight.bold,
-                fontSize: 14,
+                fontSize: MediaQuery.of(context).size.height * 0.018,
               ),
             ),
           ],

@@ -27,36 +27,42 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: context.watch<Providerr>().selectedIndex,
+      body:Selector<Providerr, int>(
+    selector: (_, provider) => provider.selectedIndex,
+    builder: (_, selectedIndex, __) {
+      return IndexedStack(
+        index: selectedIndex,
         children: _pages,
+      );
+    },
+    ),
+      bottomNavigationBar: Selector<Providerr, int>(
+        selector: (_, provider) => provider.selectedIndex,
+        builder: (_, selectedIndex, __) {
+          return BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            currentIndex: selectedIndex,
+            onTap: (index) {
+              context.read<Providerr>().setIndex(index);
+            },
+            unselectedItemColor: const Color.fromARGB(255, 0, 0, 5),
+            selectedItemColor: const Color.fromARGB(243, 237, 4, 4),
+            items: const [
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.maps_home_work_outlined), label: 'Home'),
+              BottomNavigationBarItem(icon: Icon(Icons.post_add), label: 'Feeds'),
+              BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Create'),
+              BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: 'Maps'),
+              BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
+            ],
+          );
+        },
       ),
-      bottomNavigationBar: buttonnavigation(),
+
+
     );
   }
 
-  BottomNavigationBar buttonnavigation() {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      currentIndex: context.watch<Providerr>().selectedIndex,
 
-      onTap: (index) {
-        context.read<Providerr>().setIndex(index);
-      },
 
-      unselectedItemColor: Color.fromARGB(255, 0, 0, 5),
-      selectedItemColor: Color.fromARGB(243, 237, 4, 4),
-
-      items: [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.maps_home_work_outlined),
-          label: 'Home',
-        ),
-        BottomNavigationBarItem(icon: Icon(Icons.post_add), label: 'Feeds'),
-        BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Create'),
-        BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: 'Maps'),
-        BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
-      ],
-    );
-  }
 }

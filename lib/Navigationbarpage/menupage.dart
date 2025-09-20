@@ -1,5 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:mero_kotha/Homescreen/editprofile.dart';
 import 'package:mero_kotha/Homescreen/profile.dart';
 import 'package:mero_kotha/Navigationbarpage/bookedpage.dart';
 import 'package:mero_kotha/modelclass/modelclass.dart';
@@ -8,11 +10,17 @@ import 'package:mero_kotha/authenthication/signinpage.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class Menupage extends StatelessWidget {
+class Menupage extends StatefulWidget {
   const Menupage({super.key});
 
   @override
+  State<Menupage> createState() => _MenupageState();
+}
+
+class _MenupageState extends State<Menupage> {
+  @override
   Widget build(BuildContext context) {
+    print('Settingpage');
     final screenWidth = MediaQuery.of(context).size.width;
     final double imageSize = screenWidth * 0.16;
     return Scaffold(
@@ -52,40 +60,44 @@ class Menupage extends StatelessWidget {
                               Consumer<Providerr>(
                                 builder: (context, value, child) {
                                   return Container(
-                                    padding: EdgeInsets.all(
-                                      3,
-                                    ), // border thickness
+                                    padding: EdgeInsets.all(3),
                                     decoration: BoxDecoration(
-                                      // border color
                                       shape: BoxShape.circle,
                                     ),
                                     child: ClipOval(
-                                      child: Image.network(
-                                        value.profilepic,
-                                        loadingBuilder:
-                                            (context, child, loadingProgress) {
-                                              if (loadingProgress == null)
-                                                return child;
-                                              return const Center(
-                                                child:
-                                                    CupertinoActivityIndicator(
-                                                      radius: 12,
+                                      child: value.profilepic.isNotEmpty
+                                          ? SizedBox(
+                                              width: imageSize,
+                                              height: imageSize,
+                                              child: CachedNetworkImage(
+                                                imageUrl: value.profilepic,
+                                                fit: BoxFit.cover,
+                                                placeholder: (context, url) =>
+                                                    const Center(
+                                                      child:
+                                                          CupertinoActivityIndicator(
+                                                            radius: 12,
+                                                          ),
                                                     ),
-                                              );
-                                            },
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                              return const Center(
-                                                child: Icon(
-                                                  Icons.broken_image,
-                                                  color: Colors.red,
-                                                ),
-                                              );
-                                            },
-                                        width: imageSize,
-                                        height: imageSize,
-                                        fit: BoxFit.cover,
-                                      ),
+                                                errorWidget:
+                                                    (context, url, error) =>
+                                                        const Center(
+                                                          child: Icon(
+                                                            Icons.broken_image,
+                                                            color: Colors.red,
+                                                          ),
+                                                        ),
+                                              ),
+                                            )
+                                          : SizedBox(
+                                              width: imageSize,
+                                              height: imageSize,
+                                              child: Icon(
+                                                Icons.person,
+                                                size: 30,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
                                     ),
                                   );
                                 },
@@ -160,7 +172,25 @@ class Menupage extends StatelessWidget {
                       SettingBlocks(
                         settingname: 'Edit Profile',
                         icons: Icon(Icons.person),
-                        onclick: () {},
+                        onclick: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const Editprofile(),
+                            ),
+                          );
+
+                          Future.delayed(
+                            const Duration(milliseconds: 1000),
+                            () {
+                              if (!context.mounted) return;
+                              Provider.of<Providerr>(
+                                context,
+                                listen: false,
+                              ).fetchprofileinfo();
+                            },
+                          );
+                        },
                       ),
                       Divider(),
                       SettingBlocks(
@@ -270,68 +300,50 @@ class Menupage extends StatelessWidget {
                                     },
                                     child: Text("Cancel"),
                                   ),
-                                  ElevatedButton(
-                                    onPressed: () async {
-                                      final providerr = Provider.of<Providerr>(
-                                        context,
-                                        listen: false,
-                                      );
-                                      providerr.bookedlist.clear();
-                                      providerr.bookinglist.clear();
-                                      providerr.mypostlist.clear();
+                                  Consumer<Providerr>(
+                                    builder: (context, providerr, child) {
+                                      return ElevatedButton(
+                                        onPressed: () async {
+                                          providerr.bookedlist.clear();
+                                          providerr.bookinglist.clear();
+                                          providerr.mypostlist.clear();
 
-                                      providerr.clearprofilename();
+                                          providerr.clearprofilename();
 
-                                      final supabase = Supabase.instance.client;
-                                      try {
-                                        await supabase.auth.signOut();
-                                      } catch (e) {
-                                        'error';
-                                      }
+                                          final supabase =
+                                              Supabase.instance.client;
+                                          try {
+                                            await supabase.auth.signOut();
+                                          } catch (e) {
+                                            'error';
+                                          }
+                                          if (!context.mounted) return;
+                                          await Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  Signinpage(),
+                                            ),
+                                          );
+                                        },
 
-                                      Navigator.pushReplacement(
-                                        context,
-                                        PageRouteBuilder(
-                                          transitionDuration: Duration(
-                                            milliseconds: 300,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color.fromARGB(
+                                            255,
+                                            225,
+                                            27,
+                                            13,
                                           ),
-                                          pageBuilder:
-                                              (
-                                                context,
-                                                animation,
-                                                secondaryAnimation,
-                                              ) => Signinpage(),
-                                          transitionsBuilder:
-                                              (
-                                                context,
-                                                animation,
-                                                secondaryAnimation,
-                                                child,
-                                              ) {
-                                                return FadeTransition(
-                                                  opacity: animation,
-                                                  child: child,
-                                                );
-                                              },
+                                          foregroundColor: const Color.fromARGB(
+                                            255,
+                                            255,
+                                            255,
+                                            255,
+                                          ),
                                         ),
+                                        child: Text("Log Out"),
                                       );
                                     },
-
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color.fromARGB(
-                                        255,
-                                        225,
-                                        27,
-                                        13,
-                                      ),
-                                      foregroundColor: const Color.fromARGB(
-                                        255,
-                                        255,
-                                        255,
-                                        255,
-                                      ),
-                                    ),
-                                    child: Text("Log Out"),
                                   ),
                                 ],
                               );

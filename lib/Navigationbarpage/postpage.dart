@@ -8,15 +8,18 @@ class Postpage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final providerr = Provider.of<Providerr>(context);
     return Scaffold(
       appBar: AppBar(title: Text('Recent post')),
-      body: SingleChildScrollView(
-        controller: providerr.scrollController,
-        child: AllRecentPost(
-          postcount: providerr.postlist.length,
-          postlist: providerr.postlist,
-        ),
+      body: Consumer<Providerr>(
+        builder: (context, providerr, child) {
+          return SingleChildScrollView(
+            controller: providerr.scrollController,
+            child: AllRecentPost(
+              postcount: providerr.postlist.length,
+              postlist: providerr.postlist,
+            ),
+          );
+        },
       ),
     );
   }

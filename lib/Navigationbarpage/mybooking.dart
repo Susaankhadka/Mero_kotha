@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mero_kotha/modelclass/modelclass.dart';
@@ -16,9 +17,12 @@ class _MyBookedpageState extends State<MyBookedpage> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () => Provider.of<Providerr>(context, listen: false).fetchMybookedspace(),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        if (!mounted) return;
+        Provider.of<Providerr>(context, listen: false).fetchMybookedspace();
+      });
+    });
   }
 
   @override
@@ -32,12 +36,8 @@ class _MyBookedpageState extends State<MyBookedpage> {
             return RefreshIndicator(
               elevation: 0,
               backgroundColor: Colors.transparent,
-              onRefresh: () => Future.microtask(
-                () => Provider.of<Providerr>(
-                  context,
-                  listen: false,
-                ).fetchMybookedspace(),
-              ),
+              onRefresh: () => value.fetchMybookedspace(),
+
               child: SingleChildScrollView(
                 controller: value.scrollController,
                 child: value.bookinglist.isEmpty
@@ -55,379 +55,336 @@ class _MyBookedpageState extends State<MyBookedpage> {
                           final post = value.bookinglist[index];
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 1),
-                            child: Card(
-                              color: Color.fromARGB(255, 248, 248, 248),
-
-                              shape: BeveledRectangleBorder(),
-
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Consumer<Providerr>(
-                                              builder: (context, value, child) {
-                                                return Container(
-                                                  padding: EdgeInsets.all(
-                                                    3,
-                                                  ), // border thickness
-                                                  decoration: BoxDecoration(
-                                                    // border color
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: ClipOval(
-                                                    child:
-                                                        post
-                                                            .profilrurl
-                                                            .isNotEmpty
-                                                        ? Image.network(
-                                                            post.profilrurl,
-                                                            loadingBuilder:
-                                                                (
-                                                                  context,
-                                                                  child,
-                                                                  loadingProgress,
-                                                                ) {
-                                                                  if (loadingProgress ==
-                                                                      null) {
-                                                                    return child;
-                                                                  }
-                                                                  return const Center(
-                                                                    child:
-                                                                        CupertinoActivityIndicator(
-                                                                          radius:
-                                                                              12,
-                                                                        ),
-                                                                  );
-                                                                },
-                                                            errorBuilder:
-                                                                (
-                                                                  context,
-                                                                  error,
-                                                                  stackTrace,
-                                                                ) {
-                                                                  return const Center(
-                                                                    child: Icon(
-                                                                      Icons
-                                                                          .broken_image,
-                                                                      color: Colors
-                                                                          .red,
-                                                                    ),
-                                                                  );
-                                                                },
-                                                            width: 50,
-                                                            height: 50,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Consumer<Providerr>(
+                                            builder: (context, value, child) {
+                                              return Container(
+                                                padding: EdgeInsets.all(
+                                                  3,
+                                                ), // border thickness
+                                                decoration: BoxDecoration(
+                                                  // border color
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: ClipOval(
+                                                  child:
+                                                      post.profilrurl.isNotEmpty
+                                                      ? SizedBox(
+                                                          width: 50,
+                                                          height: 50,
+                                                          child: CachedNetworkImage(
+                                                            imageUrl:
+                                                                post.profilrurl,
                                                             fit: BoxFit.cover,
-                                                          )
-                                                        : CupertinoActivityIndicator(),
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(
-                                                12.0,
-                                              ),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    post.ownername,
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                    ),
-                                                  ),
-                                                  Text(
-                                                    post.createdAt
-                                                        .toString()
-                                                        .substring(0, 19),
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.grey,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-
-                                            Spacer(),
-                                            IconButton(
-                                              icon: Icon(
-                                                Icons.more_vert,
-                                                size: 22,
-                                              ),
-                                              onPressed: () {
-                                                showModalBottomSheet(
-                                                  context: context,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.vertical(
-                                                          top: Radius.circular(
-                                                            20,
-                                                          ),
-                                                        ),
-                                                  ),
-                                                  builder: (BuildContext context) {
-                                                    return Container(
-                                                      padding: EdgeInsets.all(
-                                                        16,
-                                                      ),
-                                                      height:
-                                                          MediaQuery.of(
-                                                            context,
-                                                          ).size.height *
-                                                          0.12,
-                                                      width: double.infinity,
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          TextButton(
-                                                            onPressed: () {
-                                                              Navigator.pop(
-                                                                context,
-                                                              );
-
-                                                              showDialog(
-                                                                context:
-                                                                    context,
-                                                                builder:
-                                                                    (
-                                                                      BuildContext
-                                                                      context,
-                                                                    ) {
-                                                                      return AlertDialog(
-                                                                        shape: RoundedRectangleBorder(
-                                                                          borderRadius: BorderRadius.circular(
-                                                                            16,
-                                                                          ),
-                                                                        ),
-                                                                        title: Text(
-                                                                          "Delete Post",
-                                                                        ),
-                                                                        content:
-                                                                            Text(
-                                                                              "Are you sure you want to delete this post?",
-                                                                            ),
-                                                                        actions: [
-                                                                          TextButton(
-                                                                            onPressed: () {
-                                                                              Navigator.pop(
-                                                                                context,
-                                                                              ); //  Cancel, just close
-                                                                            },
-                                                                            child: Text(
-                                                                              "Cancel",
-                                                                            ),
-                                                                          ),
-                                                                          ElevatedButton(
-                                                                            onPressed: () {
-                                                                              value.deleteBookedpost(
-                                                                                post,
-                                                                              );
-
-                                                                              // Close dialog after delete
-                                                                              Navigator.pop(
-                                                                                context,
-                                                                              );
-                                                                            },
-                                                                            child: Text(
-                                                                              "Delete",
-                                                                            ),
-                                                                            style: ElevatedButton.styleFrom(
-                                                                              backgroundColor: Colors.red,
-                                                                            ),
-                                                                          ),
-                                                                        ],
-                                                                      );
-                                                                    },
-                                                              );
-                                                            },
-                                                            child: Row(
-                                                              children: [
-                                                                Icon(
-                                                                  Icons.delete,
-                                                                  size: 22,
+                                                            placeholder:
+                                                                (
+                                                                  context,
+                                                                  url,
+                                                                ) => const Center(
+                                                                  child:
+                                                                      CupertinoActivityIndicator(
+                                                                        radius:
+                                                                            12,
+                                                                      ),
                                                                 ),
-                                                                SizedBox(
-                                                                  width: 10,
-                                                                ),
-
-                                                                Text(
-                                                                  'Delete Post',
-                                                                  style: TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .bold,
-                                                                    fontSize:
-                                                                        16,
+                                                            errorWidget:
+                                                                (
+                                                                  context,
+                                                                  url,
+                                                                  error,
+                                                                ) => const Center(
+                                                                  child: Icon(
+                                                                    Icons
+                                                                        .broken_image,
+                                                                    color: Colors
+                                                                        .red,
                                                                   ),
                                                                 ),
-                                                              ],
-                                                            ),
                                                           ),
-                                                        ],
-                                                      ),
-                                                    );
-                                                  },
-                                                );
-                                                //providerr.deletePost(post); // delete post
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8.0,
-                                        ),
-                                        child: CaptionWidget(
-                                          caption: post.caption.toString(),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  Card(
-                                    child: SizedBox(
-                                      height: 200,
-                                      width: double.infinity,
-                                      child: PageView.builder(
-                                        controller: controller,
-                                        itemCount: post.postimg.isNotEmpty
-                                            ? post.postimg.length
-                                            : 1,
-                                        itemBuilder: (context, i) {
-                                          final imageUrl =
-                                              post.postimg.isNotEmpty
-                                              ? post.postimg[i]
-                                              : "";
-
-                                          if (imageUrl.isEmpty) {
-                                            return const Center(
-                                              child: Icon(
-                                                Icons.broken_image,
-                                                color: Colors.red,
-                                              ),
-                                            );
-                                          }
-
-                                          return Image.network(
-                                            imageUrl,
-                                            fit: BoxFit.cover,
-                                            loadingBuilder:
-                                                (
-                                                  context,
-                                                  child,
-                                                  loadingProgress,
-                                                ) {
-                                                  if (loadingProgress == null)
-                                                    return child;
-                                                  return const Center(
-                                                    child:
-                                                        CupertinoActivityIndicator(
-                                                          radius: 12,
+                                                        )
+                                                      : const SizedBox(
+                                                          width: 50,
+                                                          height: 50,
+                                                          child: Icon(
+                                                            Icons.person,
+                                                            size: 30,
+                                                            color: Colors.grey,
+                                                          ),
                                                         ),
-                                                  );
-                                                },
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                                  return const Center(
-                                                    child: Icon(
-                                                      Icons.broken_image,
-                                                      color: Colors.red,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.all(12.0),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  post.ownername,
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  post.createdAt
+                                                      .toString()
+                                                      .substring(0, 19),
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+
+                                          Spacer(),
+                                          IconButton(
+                                            icon: Icon(
+                                              Icons.more_vert,
+                                              size: 22,
+                                            ),
+                                            onPressed: () {
+                                              showModalBottomSheet(
+                                                context: context,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.vertical(
+                                                        top: Radius.circular(
+                                                          20,
+                                                        ),
+                                                      ),
+                                                ),
+                                                builder: (BuildContext context) {
+                                                  return Container(
+                                                    padding: EdgeInsets.all(16),
+                                                    height:
+                                                        MediaQuery.of(
+                                                          context,
+                                                        ).size.height *
+                                                        0.12,
+                                                    width: double.infinity,
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        TextButton(
+                                                          onPressed: () {
+                                                            Navigator.pop(
+                                                              context,
+                                                            );
+
+                                                            showDialog(
+                                                              context: context,
+                                                              builder:
+                                                                  (
+                                                                    BuildContext
+                                                                    context,
+                                                                  ) {
+                                                                    return AlertDialog(
+                                                                      shape: RoundedRectangleBorder(
+                                                                        borderRadius:
+                                                                            BorderRadius.circular(
+                                                                              16,
+                                                                            ),
+                                                                      ),
+                                                                      title: Text(
+                                                                        "Delete Post",
+                                                                      ),
+                                                                      content: Text(
+                                                                        "Are you sure you want to delete this post?",
+                                                                      ),
+                                                                      actions: [
+                                                                        TextButton(
+                                                                          onPressed: () {
+                                                                            Navigator.pop(
+                                                                              context,
+                                                                            ); //  Cancel, just close
+                                                                          },
+                                                                          child: Text(
+                                                                            "Cancel",
+                                                                          ),
+                                                                        ),
+                                                                        ElevatedButton(
+                                                                          onPressed: () {
+                                                                            value.deleteBookedpost(
+                                                                              post,
+                                                                            );
+
+                                                                            // Close dialog after delete
+                                                                            Navigator.pop(
+                                                                              context,
+                                                                            );
+                                                                          },
+
+                                                                          style: ElevatedButton.styleFrom(
+                                                                            backgroundColor:
+                                                                                Colors.red,
+                                                                          ),
+                                                                          child: Text(
+                                                                            "Delete",
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    );
+                                                                  },
+                                                            );
+                                                          },
+                                                          child: Row(
+                                                            children: [
+                                                              Icon(
+                                                                Icons.delete,
+                                                                size: 22,
+                                                              ),
+                                                              SizedBox(
+                                                                width: 10,
+                                                              ),
+
+                                                              Text(
+                                                                'Delete Post',
+                                                                style: TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize: 16,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
                                                   );
                                                 },
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-
-                                  SizedBox(height: 10),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SmoothPageIndicator(
-                                        controller: controller,
-                                        count: post.postimg.length,
-                                        effect: WormEffect(
-                                          dotHeight: 8,
-                                          dotWidth: 8,
-                                          activeDotColor: Colors.blue,
-                                          dotColor: Colors.grey.shade300,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 10),
-
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Text(
-                                          'Owener info',
-                                          style: TextStyle(fontSize: 18),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  Column(
-                                    children: [
-                                      Row(
-                                        children: [
-                                          OwenerbookerDetails(
-                                            slots: 'Amount Rs',
-                                            values: post.amount.toString(),
+                                              );
+                                              //providerr.deletePost(post); // delete post
+                                            },
                                           ),
-                                          Text('/-'),
                                         ],
                                       ),
-                                      OwenerbookerDetails(
-                                        slots: 'Name',
-                                        values: post.postername,
+                                    ),
+
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8.0,
                                       ),
-                                      OwenerbookerDetails(
-                                        slots: 'Account Name',
-                                        values: post.ownername,
+                                      child: CaptionWidget(
+                                        caption: post.caption.toString(),
                                       ),
-                                      OwenerbookerDetails(
-                                        slots: 'Email Address',
-                                        values: post.oweneremail,
-                                      ),
-                                      OwenerbookerDetails(
-                                        slots: 'Contact Number',
-                                        values: post.owenernumber,
-                                      ),
-                                      OwenerbookerDetails(
-                                        slots: 'Location',
-                                        values: post.owenerlocation,
-                                      ),
-                                      OwenerbookerDetails(
-                                        slots: 'Booked Date',
-                                        values: post.createdAt
-                                            .toString()
-                                            .substring(0, 19),
-                                      ),
-                                    ],
+                                    ),
+                                  ],
+                                ),
+                                Card(
+                                  child: SizedBox(
+                                    height: 300,
+                                    width: double.infinity,
+                                    child: PageView.builder(
+                                      controller: controller,
+                                      itemCount: post.postimg.length,
+                                      itemBuilder: (context, i) {
+                                        return CachedNetworkImage(
+                                          imageUrl: post.postimg[i],
+                                          fit: BoxFit.cover,
+                                          placeholder: (context, url) =>
+                                              const Center(
+                                                child:
+                                                    CupertinoActivityIndicator(
+                                                      radius: 12,
+                                                    ),
+                                              ),
+                                          errorWidget: (context, url, error) =>
+                                              const Center(
+                                                child: Icon(
+                                                  Icons.broken_image,
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+                                        );
+                                      },
+                                    ),
                                   ),
-                                  SizedBox(height: 15),
-                                ],
-                              ),
+                                ),
+                                SizedBox(height: 10),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SmoothPageIndicator(
+                                      controller: controller,
+                                      count: post.postimg.length,
+                                      effect: WormEffect(
+                                        dotHeight: 8,
+                                        dotWidth: 8,
+                                        activeDotColor: Colors.blue,
+                                        dotColor: Colors.grey.shade300,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 10),
+
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        'Owener info',
+                                        style: TextStyle(fontSize: 18),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                Column(
+                                  children: [
+                                    OwenerbookerDetails(
+                                      slots: 'Amount',
+                                      values: 'Rs ${post.amount.toString()} /-',
+                                    ),
+
+                                    OwenerbookerDetails(
+                                      slots: 'Name',
+                                      values: post.postername,
+                                    ),
+                                    OwenerbookerDetails(
+                                      slots: 'Account Name',
+                                      values: post.ownername,
+                                    ),
+                                    OwenerbookerDetails(
+                                      slots: 'Email Address',
+                                      values: post.oweneremail,
+                                    ),
+                                    OwenerbookerDetails(
+                                      slots: 'Contact Number',
+                                      values: post.owenernumber,
+                                    ),
+                                    OwenerbookerDetails(
+                                      slots: 'Location',
+                                      values: post.owenerlocation,
+                                    ),
+                                    OwenerbookerDetails(
+                                      slots: 'Booked Date & Time',
+                                      values:
+                                          'Date: ${post.bookdate.toString().substring(0, 10)}\nTime: ${post.bookdate.toString().substring(11, 19)}',
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 15),
+                              ],
                             ),
                           );
                         },
