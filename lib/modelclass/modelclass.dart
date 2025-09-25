@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mero_kotha/Navigationbarpage/reviewpage.dart';
-import 'package:mero_kotha/stagemanagement/statemanagement.dart';
+import 'package:mero_kotha/stagemanagement/BookingProvider.dart';
+import 'package:mero_kotha/stagemanagement/UiProvider.dart';
+import 'package:mero_kotha/stagemanagement/UserProvider.dart';
+import 'package:mero_kotha/stagemanagement/postprovider.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -44,7 +49,8 @@ class Post {
   final List<String> postimg; // URLs
   final List<String> imagePaths; // storage paths
   final String caption;
-
+  bool? issaved;
+  final bool issold;
   final DateTime createdAt;
 
   Post({
@@ -60,13 +66,21 @@ class Post {
     required this.postimg,
     required this.imagePaths,
     required this.caption,
+    this.issaved,
+    required this.issold,
     required this.createdAt,
   });
+}
+
+class Savedpost {
+  final bool issaved;
+  Savedpost({required this.issaved});
 }
 
 class BookedPost {
   final int id;
   final int amount;
+  final int offeramount;
   final String postername;
   final String oweneremail;
   final String owenerlocation;
@@ -77,7 +91,7 @@ class BookedPost {
   final String bookernumber;
   final String bookergmail;
   final String bookername;
-  final List<String> postimg; // URLs
+  final List<String> postimg;
   final String profilrurl;
   final String caption;
   final DateTime bookdate;
@@ -86,6 +100,7 @@ class BookedPost {
   BookedPost({
     required this.id,
     required this.amount,
+    required this.offeramount,
     required this.postername,
     required this.oweneremail,
     required this.owenerlocation,
@@ -104,26 +119,13 @@ class BookedPost {
   });
 }
 
-class Place {
-  final String placename;
-  final String placeimg;
-  Place({required this.placename, required this.placeimg});
-}
+class Advertisements {
+  final String? adDescrp;
+  final String adImg;
+  final double hight;
 
-List<Place> placelist = [
-  Place(placename: 'Kathmandu', placeimg: 'assets/images/IMG_4768.jpg'),
-  Place(
-    placename: 'Bhaktapur',
-    placeimg: 'assets/images/tallest-temple-of-nepal.jpg',
-  ),
-  Place(
-    placename: 'Lalitpur',
-    placeimg: 'assets/images/Durbar-Square-Lalitpur-Nepal.jpg.webp',
-  ),
-  Place(placename: 'Pokhara', placeimg: 'assets/images/pokhara-socoal.webp'),
-  Place(placename: 'Kalinchok', placeimg: 'assets/images/licensed-image.jpeg'),
-  Place(placename: 'Chitwan', placeimg: 'assets/images/thumb.php.jpeg'),
-];
+  Advertisements({this.adDescrp, required this.hight, required this.adImg});
+}
 
 class AllRecentPost extends StatefulWidget {
   final List postlist;
@@ -139,406 +141,589 @@ class AllRecentPost extends StatefulWidget {
 }
 
 class _AllRecentPostState extends State<AllRecentPost> {
+  final Map<int, ValueNotifier<int>> pageIndexes = {};
+
   final bookercontroller = TextEditingController();
 
   final locationcontroller = TextEditingController();
 
   final numbercontroller = TextEditingController();
   final bookeremailcontroller = TextEditingController();
+  final offeramountcontroller = TextEditingController();
+  bool _showNoPost = false;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.postlist.isEmpty) {
+      _timer = Timer(const Duration(seconds: 5), () {
+        if (mounted) {
+          setState(() {
+            _showNoPost = true;
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    bookercontroller.dispose();
+    locationcontroller.dispose();
+    numbercontroller.dispose();
+    bookeremailcontroller.dispose();
+    offeramountcontroller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<Providerr>(
+    return Consumer<UserProvider>(
       builder: (context, value, child) {
-        return widget.postlist.isEmpty
-            ? const Center(child: CupertinoActivityIndicator())
-            : ListView.builder(
-                physics: NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                itemCount: widget.postcount,
-                itemBuilder: (context, index) {
-                  final controller = PageController();
-                  final post = widget.postlist[index];
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 1),
-                    child: Card(
-                      color: Color.fromARGB(255, 248, 248, 248),
-
-                      shape: BeveledRectangleBorder(),
-
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+        if (widget.postlist.isEmpty) {
+          return Center(
+            child: _showNoPost
+                ? const Text('No Post')
+                : const CupertinoActivityIndicator(radius: 15),
+          );
+        }
+        return ListView.builder(
+          controller: context.read<UiProvider>().scrollController,
+          itemCount: widget.postcount,
+          itemBuilder: (context, index) {
+            final post = widget.postlist[index];
+            pageIndexes.putIfAbsent(index, () => ValueNotifier<int>(0));
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 1),
+              child: Card(
+                color: Color.fromARGB(255, 248, 248, 248),
+                shape: BeveledRectangleBorder(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
+                              Container(
+                                padding: EdgeInsets.all(3), // border thickness
+                                decoration: BoxDecoration(
+                                  // border color
+                                  shape: BoxShape.circle,
+                                ),
+                                child: ClipOval(
+                                  child: value.profilepic.isNotEmpty
+                                      ? SizedBox(
+                                          width: 50,
+                                          height: 50,
+                                          child: CachedNetworkImage(
+                                            imageUrl: post.profilepicurl,
+                                            fit: BoxFit.cover,
+                                            placeholder: (context, url) =>
+                                                const Center(
+                                                  child:
+                                                      CupertinoActivityIndicator(
+                                                        radius: 12,
+                                                      ),
+                                                ),
+                                            errorWidget:
+                                                (context, url, error) =>
+                                                    const Center(
+                                                      child: Icon(
+                                                        Icons.broken_image,
+                                                        color: Colors.red,
+                                                      ),
+                                                    ),
+                                          ),
+                                        )
+                                      : const SizedBox(
+                                          width: 50,
+                                          height: 50,
+                                          child: Icon(
+                                            Icons.person,
+                                            size: 30,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                ),
+                              ),
                               Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                padding: const EdgeInsets.all(12.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Consumer<Providerr>(
-                                      builder: (context, value, child) {
-                                        return Container(
-                                          padding: EdgeInsets.all(
-                                            3,
-                                          ), // border thickness
-                                          decoration: BoxDecoration(
-                                            // border color
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: ClipOval(
-                                            child: value.profilepic.isNotEmpty
-                                                ? SizedBox(
-                                                    width: 50,
-                                                    height: 50,
-                                                    child: CachedNetworkImage(
-                                                      imageUrl:
-                                                          post.profilepicurl,
-                                                      fit: BoxFit.cover,
-                                                      placeholder:
-                                                          (
-                                                            context,
-                                                            url,
-                                                          ) => const Center(
-                                                            child:
-                                                                CupertinoActivityIndicator(
-                                                                  radius: 12,
-                                                                ),
-                                                          ),
-                                                      errorWidget:
-                                                          (
-                                                            context,
-                                                            url,
-                                                            error,
-                                                          ) => const Center(
-                                                            child: Icon(
-                                                              Icons
-                                                                  .broken_image,
-                                                              color: Colors.red,
-                                                            ),
-                                                          ),
-                                                    ),
-                                                  )
-                                                : const SizedBox(
-                                                    width: 50,
-                                                    height: 50,
-                                                    child: Icon(
-                                                      Icons.person,
-                                                      size: 30,
-                                                      color: Colors.grey,
-                                                    ),
-                                                  ),
-                                          ),
-                                        );
-                                      },
+                                    Text(
+                                      post.username,
+                                      style: const TextStyle(fontSize: 14),
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.all(12.0),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            post.username,
-                                            style: TextStyle(fontSize: 14),
-                                          ),
-                                          Text(
-                                            post.createdAt.toString().substring(
-                                              0,
-                                              19,
-                                            ),
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ],
+                                    Text(
+                                      post.createdAt.toString().substring(
+                                        0,
+                                        19,
                                       ),
-                                    ),
-
-                                    Spacer(),
-                                    IconButton(
-                                      icon: Icon(Icons.more_vert, size: 22),
-                                      onPressed: () {
-                                        showModalBottomSheet(
-                                          context: context,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.vertical(
-                                              top: Radius.circular(20),
-                                            ),
-                                          ),
-                                          builder: (BuildContext context) {
-                                            final supabase =
-                                                Supabase.instance.client;
-                                            return Container(
-                                              padding: EdgeInsets.all(16),
-                                              height:
-                                                  MediaQuery.of(
-                                                    context,
-                                                  ).size.height *
-                                                  0.12,
-                                              width: double.infinity,
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  post.userid ==
-                                                          supabase
-                                                              .auth
-                                                              .currentUser!
-                                                              .id
-                                                      ? TextButton(
-                                                          onPressed: () {
-                                                            Navigator.pop(
-                                                              context,
-                                                            );
-
-                                                            showDialog(
-                                                              context: context,
-                                                              builder:
-                                                                  (
-                                                                    BuildContext
-                                                                    context,
-                                                                  ) {
-                                                                    return AlertDialog(
-                                                                      shape: RoundedRectangleBorder(
-                                                                        borderRadius:
-                                                                            BorderRadius.circular(
-                                                                              16,
-                                                                            ),
-                                                                      ),
-                                                                      title: Text(
-                                                                        "Delete Post",
-                                                                      ),
-                                                                      content: Text(
-                                                                        "Are you sure you want to delete this post?",
-                                                                      ),
-                                                                      actions: [
-                                                                        TextButton(
-                                                                          onPressed: () {
-                                                                            Navigator.pop(
-                                                                              context,
-                                                                            ); //  Cancel, just close
-                                                                          },
-                                                                          child: Text(
-                                                                            "Cancel",
-                                                                          ),
-                                                                        ),
-                                                                        ElevatedButton(
-                                                                          onPressed: () async {
-                                                                            // ✅ Do your delete action here
-                                                                            value.deletePost(
-                                                                              post,
-                                                                            );
-
-                                                                            // Close dialog after delete
-                                                                            Navigator.pop(
-                                                                              context,
-                                                                            );
-                                                                          },
-
-                                                                          style: ElevatedButton.styleFrom(
-                                                                            backgroundColor:
-                                                                                Colors.red,
-                                                                          ),
-                                                                          child: Text(
-                                                                            "Delete",
-                                                                          ),
-                                                                        ),
-                                                                      ],
-                                                                    );
-                                                                  },
-                                                            );
-                                                          },
-                                                          child: Row(
-                                                            children: [
-                                                              Icon(
-                                                                Icons.delete,
-                                                                size: 22,
-                                                              ),
-                                                              SizedBox(
-                                                                width: 10,
-                                                              ),
-
-                                                              Text(
-                                                                'Delete Post',
-                                                                style: TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 16,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        )
-                                                      : TextButton(
-                                                          onPressed: () =>
-                                                              Navigator.pop(
-                                                                context,
-                                                              ),
-                                                          child: Column(
-                                                            children: [
-                                                              Row(
-                                                                children: [
-                                                                  Icon(
-                                                                    Icons.close,
-                                                                  ),
-                                                                  SizedBox(
-                                                                    width: 15,
-                                                                  ),
-                                                                  Text('close'),
-                                                                ],
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        );
-                                        //providerr.deletePost(post); // delete post
-                                      },
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
 
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8.0,
-                                ),
-                                child: CaptionWidget(
-                                  caption: post.caption.toString(),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Card(
-                            shape: RoundedRectangleBorder(),
-                            child: SizedBox(
-                              height: 300,
-                              width: double.infinity,
-                              child: PageView.builder(
-                                controller: controller,
-                                itemCount: post.postimg.length,
-                                itemBuilder: (context, i) {
-                                  return CachedNetworkImage(
-                                    imageUrl: post.postimg[i],
-                                    fit: BoxFit.contain,
-                                    placeholder: (context, url) => const Center(
-                                      child: CupertinoActivityIndicator(
-                                        radius: 12,
-                                      ),
-                                    ),
-                                    errorWidget: (context, url, error) =>
-                                        const Center(
-                                          child: Icon(
-                                            Icons.broken_image,
-                                            color: Colors.red,
-                                          ),
+                              const Spacer(),
+                              post.issold
+                                  ? Container(
+                                      decoration: BoxDecoration(
+                                        color: Color.fromARGB(
+                                          255,
+                                          164,
+                                          153,
+                                          153,
                                         ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          SmoothPageIndicator(
-                            controller: controller,
-                            count: post.postimg.length,
-                            effect: WormEffect(
-                              dotHeight: 8,
-                              dotWidth: 8,
-                              activeDotColor: Colors.blue,
-                              dotColor: Colors.grey.shade300,
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  minimumSize: Size(120, 35),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  backgroundColor: Color.fromARGB(
-                                    255,
-                                    141,
-                                    6,
-                                    231,
-                                  ),
-                                  foregroundColor: Color.fromARGB(
-                                    255,
-                                    255,
-                                    255,
-                                    255,
-                                  ),
-                                ),
-                                onPressed: () async {
-                                  Navigator.push(
-                                    context,
-                                    PageRouteBuilder(
-                                      transitionDuration: const Duration(
-                                        milliseconds: 300,
+                                        borderRadius: BorderRadius.circular(5),
                                       ),
-                                      pageBuilder:
-                                          (
-                                            context,
-                                            animation,
-                                            secondaryAnimation,
-                                          ) => ReviewPage(
-                                            post: post,
-                                            bookercontroller: bookercontroller,
-                                            bookeremailcontroller:
-                                                bookeremailcontroller,
-                                            locationcontroller:
-                                                locationcontroller,
-                                            numbercontroller: numbercontroller,
-                                          ),
-                                      transitionsBuilder:
-                                          (
-                                            context,
-                                            animation,
-                                            secondaryAnimation,
-                                            child,
-                                          ) {
-                                            return FadeTransition(
-                                              opacity: animation,
-                                              child: child,
-                                            );
-                                          },
-                                    ),
-                                  );
-                                },
-                                child: Text(
-                                  'Review',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              ),
-
-                              Bookedbutton(
+                                      child: const Text('   Sold   '),
+                                    )
+                                  : const SizedBox.shrink(),
+                              Postsettingoption(
                                 post: post,
-                                bookercontroller: bookercontroller,
-                                bookeremailcontroller: bookeremailcontroller,
-                                locationcontroller: locationcontroller,
-                                numbercontroller: numbercontroller,
+                                //savedpost: post,
                               ),
                             ],
                           ),
-                          SizedBox(height: 10),
+                        ),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: CaptionWidget(
+                            caption: post.caption.toString(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Card(
+                      shape: RoundedRectangleBorder(),
+                      child: SizedBox(
+                        height: 350,
+                        width: double.infinity,
+                        child: PageView.builder(
+                          itemCount: post.postimg.length,
+                          onPageChanged: (page) =>
+                              pageIndexes[index]!.value = page,
+                          itemBuilder: (context, i) {
+                            return CachedNetworkImage(
+                              imageUrl: post.postimg[i],
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => const Center(
+                                child: CupertinoActivityIndicator(radius: 12),
+                              ),
+                              errorWidget: (context, url, error) =>
+                                  const Center(
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    if (post.postimg.length > 1)
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: ValueListenableBuilder<int>(
+                          valueListenable: pageIndexes[index]!,
+                          builder: (context, page, _) {
+                            return SmoothPageIndicator(
+                              controller: PageController(initialPage: page),
+                              count: post.postimg.length,
+                              effect: WormEffect(
+                                dotHeight: 8,
+                                dotWidth: 8,
+                                activeDotColor: Colors.blue,
+                                dotColor: Colors.grey.shade300,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    const SizedBox(height: 10),
+                    ReviewBookButton(
+                      post: post,
+                      bookercontroller: bookercontroller,
+                      bookeremailcontroller: bookeremailcontroller,
+                      locationcontroller: locationcontroller,
+                      numbercontroller: numbercontroller,
+                      offeramountcontroller: offeramountcontroller,
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class Postsettingoption extends StatelessWidget {
+  const Postsettingoption({super.key, required this.post});
+
+  final Post post;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.more_vert, size: 22),
+      onPressed: () {
+        showModalBottomSheet(
+          isScrollControlled: true,
+          context: context,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (BuildContext context) {
+            final supabase = Supabase.instance.client;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 40),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Card(
+                    color: Color.fromARGB(255, 255, 255, 255),
+                    elevation: 0,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        children: [
+                          (post.userid == supabase.auth.currentUser!.id)
+                              ? TextButton(
+                                  style: ButtonStyle(
+                                    shape: WidgetStatePropertyAll(
+                                      BeveledRectangleBorder(),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) {
+                                        return Deletepost(post: post);
+                                      },
+                                    );
+                                  },
+                                  child: const Row(
+                                    children: [
+                                      SizedBox(width: 10),
+                                      Icon(Icons.delete, size: 22),
+                                      SizedBox(width: 10),
+
+                                      Text(
+                                        'Delete Post',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : TextButton(
+                                  style: ButtonStyle(
+                                    shape: WidgetStatePropertyAll(
+                                      BeveledRectangleBorder(),
+                                    ),
+                                  ),
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Row(
+                                    children: [
+                                      SizedBox(width: 10),
+                                      Icon(Icons.close, size: 22),
+                                      SizedBox(width: 15),
+                                      Text(
+                                        'close',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                          Consumer<PostProvider>(
+                            builder: (context, value, child) {
+                              return TextButton(
+                                onPressed: () async {
+                                  Navigator.pop(context);
+                                  await value.favouritePost(post);
+                                },
+                                style: ButtonStyle(
+                                  shape: WidgetStatePropertyAll(
+                                    BeveledRectangleBorder(),
+                                  ),
+                                ),
+                                child: (post.issaved ?? false)
+                                    ? const Row(
+                                        children: [
+                                          SizedBox(width: 10),
+                                          Icon(
+                                            Icons.unpublished_sharp,
+                                            size: 22,
+                                          ),
+                                          SizedBox(width: 10),
+                                          Text(
+                                            'unsave',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : const Row(
+                                        children: [
+                                          SizedBox(width: 10),
+                                          Icon(Icons.save, size: 22),
+                                          SizedBox(width: 10),
+                                          Text(
+                                            'save',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              );
+                            },
+                          ),
+
+                          Consumer<PostProvider>(
+                            builder: (context, value, child) {
+                              return post.userid ==
+                                      supabase.auth.currentUser!.id
+                                  ? TextButton(
+                                      style: ButtonStyle(
+                                        shape: WidgetStatePropertyAll(
+                                          BeveledRectangleBorder(),
+                                        ),
+                                      ),
+                                      onPressed: () async {
+                                        Navigator.pop(context);
+                                        await value.soldPost(post);
+                                      },
+                                      child: const Row(
+                                        children: [
+                                          SizedBox(width: 10),
+                                          Icon(Icons.sell, size: 22),
+                                          SizedBox(width: 10),
+                                          Text(
+                                            'Sold Post',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : const SizedBox.shrink();
+                            },
+                          ),
+
+                          TextButton(
+                            style: ButtonStyle(
+                              shape: WidgetStatePropertyAll(
+                                BeveledRectangleBorder(),
+                              ),
+                            ),
+                            onPressed: () => Navigator.pop(context),
+                            child: const Row(
+                              children: [
+                                SizedBox(width: 10),
+                                Icon(Icons.share, size: 22),
+                                SizedBox(width: 15),
+                                Text(
+                                  'Share',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                  );
-                },
-              );
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Card(
+                    color: Color.fromARGB(255, 255, 255, 255),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: TextButton(
+                        style: ButtonStyle(
+                          shape: WidgetStatePropertyAll(
+                            BeveledRectangleBorder(),
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: const Row(
+                          children: [
+                            SizedBox(width: 10),
+                            Icon(Icons.report, size: 22),
+                            SizedBox(width: 15),
+                            Text(
+                              'Report Post',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class ReviewBookButton extends StatelessWidget {
+  const ReviewBookButton({
+    super.key,
+    required this.post,
+    required this.bookercontroller,
+    required this.bookeremailcontroller,
+    required this.locationcontroller,
+    required this.numbercontroller,
+    required this.offeramountcontroller,
+  });
+
+  final dynamic post;
+  final TextEditingController bookercontroller;
+  final TextEditingController bookeremailcontroller;
+  final TextEditingController locationcontroller;
+  final TextEditingController numbercontroller;
+  final TextEditingController offeramountcontroller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            minimumSize: Size(120, 35),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(5),
+            ),
+            backgroundColor: Color.fromARGB(255, 141, 6, 231),
+            foregroundColor: Color.fromARGB(255, 255, 255, 255),
+          ),
+          onPressed: () async {
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                transitionDuration: const Duration(milliseconds: 300),
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    ReviewPage(
+                      post: post,
+                      bookercontroller: bookercontroller,
+                      bookeremailcontroller: bookeremailcontroller,
+                      locationcontroller: locationcontroller,
+                      numbercontroller: numbercontroller,
+                      offeramountcontroller: offeramountcontroller,
+                    ),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+              ),
+            );
+          },
+          child: const Text(
+            'Review',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+
+        Bookedbutton(
+          post: post,
+          bookercontroller: bookercontroller,
+          bookeremailcontroller: bookeremailcontroller,
+          locationcontroller: locationcontroller,
+          numbercontroller: numbercontroller,
+
+          offercontroller: offeramountcontroller,
+        ),
+      ],
+    );
+  }
+}
+
+class Deletepost extends StatelessWidget {
+  const Deletepost({super.key, required this.post});
+
+  final dynamic post;
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<PostProvider>(
+      builder: (context, value, child) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text("Delete Post"),
+          content: const Text("Are you sure you want to delete this post?"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); //  Cancel, just close
+              },
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                try {
+                  await value.deletePost(post);
+                } catch (e) {
+                  print("Error deleting post: $e");
+                }
+              },
+
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Color.fromARGB(255, 255, 255, 255),
+              ),
+              child: const Text("Delete"),
+            ),
+          ],
+        );
       },
     );
   }
@@ -606,10 +791,10 @@ class SettingBlocks extends StatelessWidget {
         child: Row(
           children: [
             icons,
-            SizedBox(width: 10),
+            const SizedBox(width: 10),
             Text(settingname),
-            Spacer(),
-            Icon(Icons.arrow_forward_ios, size: 15),
+            const Spacer(),
+            const Icon(Icons.arrow_forward_ios, size: 15),
           ],
         ),
       ),
@@ -639,14 +824,14 @@ class OwenerbookerDetails extends StatelessWidget {
               width: MediaQuery.of(context).size.width * 0.3,
               child: Text(
                 slots,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Color.fromARGB(233, 250, 155, 2),
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
-          Text(': '),
+          const Text(': '),
           SizedBox(
             width: MediaQuery.of(context).size.width * 0.55,
             child: Text(values),
@@ -658,14 +843,14 @@ class OwenerbookerDetails extends StatelessWidget {
 }
 
 class Bookedbutton extends StatelessWidget {
-  final Post post;
+  final dynamic post;
   final _formkey = GlobalKey<FormState>();
   final TextEditingController bookercontroller;
 
   final TextEditingController locationcontroller;
 
   final TextEditingController numbercontroller;
-
+  final TextEditingController offercontroller;
   final TextEditingController bookeremailcontroller;
   Bookedbutton({
     super.key,
@@ -673,12 +858,13 @@ class Bookedbutton extends StatelessWidget {
     required this.bookercontroller,
     required this.bookeremailcontroller,
     required this.locationcontroller,
+    required this.offercontroller,
     required this.numbercontroller,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<Providerr>(
+    return Consumer<BookingProvider>(
       builder: (context, value, child) {
         return ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -691,298 +877,386 @@ class Bookedbutton extends StatelessWidget {
           ),
           onPressed: () async {
             showModalBottomSheet(
+              isScrollControlled: true,
               context: context,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
               ),
               builder: (BuildContext context) {
-                return SingleChildScrollView(
-                  child: SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.65,
-                    width: double.infinity,
-                    child: Column(
-                      children: [
-                        SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                return DraggableScrollableSheet(
+                  expand: false, // allows it to scroll
+                  initialChildSize: 0.9, // 90% of screen height initially
+                  minChildSize: 0.5,
+                  maxChildSize: 1.0, // full screen
+                  builder: (context, scrollController) {
+                    return SingleChildScrollView(
+                      controller: scrollController,
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Column(
                           children: [
-                            Text(
-                              'Fill Details',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                const Text(
+                                  'Fill Details',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
 
-                            TextButton(
-                              style: TextButton.styleFrom(
-                                overlayColor: Colors.transparent,
-                              ),
-                              onPressed: () {
-                                if (_formkey.currentState!.validate()) {
-                                  Navigator.pop(context);
+                                TextButton(
+                                  style: TextButton.styleFrom(
+                                    overlayColor: Colors.transparent,
+                                  ),
+                                  onPressed: () {
+                                    if (_formkey.currentState!.validate()) {
+                                      Navigator.pop(context);
 
-                                  showDialog(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return AlertDialog(
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                        ),
-                                        title: Text("Book now"),
-                                        content: Text(
-                                          "Are you sure you want to Book this space?",
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(
-                                                context,
-                                              ); //  Cancel, just close
-                                            },
-                                            child: Text("Cancel"),
-                                          ),
-                                          ElevatedButton(
-                                            onPressed: () async {
-                                              await value.bookedspace(
-                                                post,
-                                                bookercontroller.text
-                                                    .toString(),
-                                                locationcontroller.text
-                                                    .toString(),
-                                                numbercontroller.text
-                                                    .toString(),
-                                                bookeremailcontroller.text
-                                                    .toString(),
-                                              );
-                                              if (!context.mounted) return;
-                                              bookercontroller.clear();
-                                              bookeremailcontroller.clear();
-                                              numbercontroller.clear();
-                                              locationcontroller.clear();
-                                              Navigator.pop(context);
-                                            },
-
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.red,
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return AlertDialog(
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
                                             ),
-                                            child: Text("Book"),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-                                }
-                              },
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  Icon(
-                                    Icons.send,
-                                    color: Color.fromARGB(255, 1, 88, 26),
-                                    size: 22,
-                                  ),
-                                  SizedBox(width: 10),
+                                            title: const Text("Book now"),
+                                            content: const Text(
+                                              "Are you sure you want to Book this space?",
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.pop(
+                                                    context,
+                                                  ); //  Cancel, just close
+                                                },
+                                                child: const Text("Cancel"),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () async {
+                                                  await value.bookedspace(
+                                                    post,
+                                                    bookercontroller.text,
 
-                                  Text(
-                                    'Submit',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
+                                                    locationcontroller.text,
+
+                                                    numbercontroller.text,
+
+                                                    bookeremailcontroller.text,
+
+                                                    offercontroller.text,
+                                                  );
+                                                  if (!context.mounted) return;
+                                                  bookercontroller.clear();
+                                                  bookeremailcontroller.clear();
+                                                  numbercontroller.clear();
+                                                  locationcontroller.clear();
+                                                  offercontroller.clear();
+                                                  Navigator.pop(context);
+                                                },
+
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                                child: const Text("Book"),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    }
+                                  },
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Icon(
+                                        Icons.send,
+                                        color: Color.fromARGB(255, 1, 88, 26),
+                                        size: 22,
+                                      ),
+                                      SizedBox(width: 10),
+
+                                      Text(
+                                        'Submit',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
+                              ],
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Form(
+                                key: _formkey,
+                                child: Column(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                      ),
+                                      child: TextFormField(
+                                        controller: bookercontroller,
+
+                                        decoration: InputDecoration(
+                                          prefixIcon: const Icon(Icons.person),
+                                          labelText: 'Enter your Name',
+                                          filled: true,
+                                          fillColor: Color.fromARGB(
+                                            255,
+                                            255,
+                                            255,
+                                            255,
+                                          ),
+                                          focusedErrorBorder:
+                                              OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                            borderSide: BorderSide.none,
+                                          ),
+                                        ),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Please enter your Name';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                      ),
+                                      child: TextFormField(
+                                        controller: bookeremailcontroller,
+                                        keyboardType:
+                                            TextInputType.emailAddress,
+                                        decoration: InputDecoration(
+                                          prefixIcon: const Icon(Icons.email),
+                                          labelText: 'Email Address',
+                                          filled: true,
+                                          fillColor: Color.fromARGB(
+                                            255,
+                                            255,
+                                            255,
+                                            255,
+                                          ),
+                                          focusedErrorBorder:
+                                              OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                            borderSide: BorderSide.none,
+                                          ),
+                                        ),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return "Email is required";
+                                          }
+                                          // ✅ Regular email pattern
+                                          String pattern =
+                                              r'^[a-zA-Z0-9._%+-]+@gmail\.com$';
+                                          RegExp regex = RegExp(pattern);
+
+                                          if (!regex.hasMatch(value)) {
+                                            return "Enter a valid Gmail address";
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                      ),
+
+                                      child: TextFormField(
+                                        controller: numbercontroller,
+                                        keyboardType: TextInputType.number,
+                                        decoration: InputDecoration(
+                                          prefixIcon: const Icon(Icons.phone),
+                                          labelText: 'Phone Number',
+                                          filled: true,
+                                          fillColor: Color.fromARGB(
+                                            255,
+                                            255,
+                                            255,
+                                            255,
+                                          ),
+                                          focusedErrorBorder:
+                                              OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                            borderSide: BorderSide.none,
+                                          ),
+                                        ),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return "Phone number is required";
+                                          }
+
+                                          // ✅ Regex for 10 digits starting with 97 or 98
+                                          String pattern = r'^(97|98)\d{8}$';
+                                          RegExp regex = RegExp(pattern);
+
+                                          if (!regex.hasMatch(value)) {
+                                            return "Enter a valid 10-digit number starting with 97 or 98";
+                                          }
+
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                      ),
+
+                                      child: TextFormField(
+                                        controller: locationcontroller,
+                                        decoration: InputDecoration(
+                                          prefixIcon: const Icon(
+                                            Icons.location_on,
+                                          ),
+                                          labelText: 'Location',
+                                          filled: true,
+                                          fillColor: Color.fromARGB(
+                                            255,
+                                            255,
+                                            255,
+                                            255,
+                                          ),
+                                          focusedErrorBorder:
+                                              OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                            borderSide: BorderSide.none,
+                                          ),
+                                        ),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Please enter your location';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                      ),
+
+                                      child: TextFormField(
+                                        controller: offercontroller,
+                                        keyboardType: TextInputType.number,
+                                        decoration: InputDecoration(
+                                          prefixIcon: Icon(Icons.location_on),
+                                          labelText: 'your offer amount',
+                                          filled: true,
+                                          fillColor: Color.fromARGB(
+                                            255,
+                                            255,
+                                            255,
+                                            255,
+                                          ),
+                                          focusedErrorBorder:
+                                              OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                            borderSide: BorderSide.none,
+                                          ),
+                                        ),
+                                        validator: (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return null;
+                                          }
+                                          final digitsOnly = RegExp(
+                                            r'^[0-9]+$',
+                                          );
+                                          if (!digitsOnly.hasMatch(value)) {
+                                            return "Only digits allowed";
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Form(
-                            key: _formkey,
-                            child: Column(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                  ),
-                                  child: TextFormField(
-                                    controller: bookercontroller,
-
-                                    decoration: InputDecoration(
-                                      prefixIcon: Icon(Icons.person),
-                                      labelText: 'Enter your Name',
-                                      filled: true,
-                                      fillColor: Color.fromARGB(
-                                        255,
-                                        255,
-                                        255,
-                                        255,
-                                      ),
-                                      focusedErrorBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                        borderSide: BorderSide.none,
-                                      ),
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter your Name';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                SizedBox(height: 10),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                  ),
-                                  child: TextFormField(
-                                    controller: bookeremailcontroller,
-                                    keyboardType: TextInputType.emailAddress,
-                                    decoration: InputDecoration(
-                                      prefixIcon: Icon(Icons.email),
-                                      labelText: 'Email Address',
-                                      filled: true,
-                                      fillColor: Color.fromARGB(
-                                        255,
-                                        255,
-                                        255,
-                                        255,
-                                      ),
-                                      focusedErrorBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                        borderSide: BorderSide.none,
-                                      ),
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return "Email is required";
-                                      }
-                                      // ✅ Regular email pattern
-                                      String pattern =
-                                          r'^[a-zA-Z0-9._%+-]+@gmail\.com$';
-                                      RegExp regex = RegExp(pattern);
-
-                                      if (!regex.hasMatch(value)) {
-                                        return "Enter a valid Gmail address";
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                SizedBox(height: 10),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                  ),
-
-                                  child: TextFormField(
-                                    controller: numbercontroller,
-                                    keyboardType: TextInputType.number,
-                                    decoration: InputDecoration(
-                                      prefixIcon: Icon(Icons.phone),
-                                      labelText: 'Phone Number',
-                                      filled: true,
-                                      fillColor: Color.fromARGB(
-                                        255,
-                                        255,
-                                        255,
-                                        255,
-                                      ),
-                                      focusedErrorBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                        borderSide: BorderSide.none,
-                                      ),
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return "Phone number is required";
-                                      }
-
-                                      // ✅ Regex for 10 digits starting with 97 or 98
-                                      String pattern = r'^(97|98)\d{8}$';
-                                      RegExp regex = RegExp(pattern);
-
-                                      if (!regex.hasMatch(value)) {
-                                        return "Enter a valid 10-digit number starting with 97 or 98";
-                                      }
-
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                SizedBox(height: 10),
-
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                  ),
-
-                                  child: TextFormField(
-                                    controller: locationcontroller,
-                                    decoration: InputDecoration(
-                                      prefixIcon: Icon(Icons.location_on),
-                                      labelText: 'Location',
-                                      filled: true,
-                                      fillColor: Color.fromARGB(
-                                        255,
-                                        255,
-                                        255,
-                                        255,
-                                      ),
-                                      focusedErrorBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                        borderSide: BorderSide.none,
-                                      ),
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter your location';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                SizedBox(height: 10),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 );
               },
             );
           },
-          child: Text(
+          child: const Text(
             'Book Now',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
@@ -992,7 +1266,7 @@ class Bookedbutton extends StatelessWidget {
   }
 }
 
-Color textfillcolor = Color.fromARGB(255, 215, 209, 209);
+const Color textfillcolor = Color.fromARGB(255, 215, 209, 209);
 
 class ActionButton extends StatelessWidget {
   final IconData icon;

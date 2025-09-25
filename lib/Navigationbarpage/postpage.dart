@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mero_kotha/modelclass/modelclass.dart';
-import 'package:mero_kotha/stagemanagement/statemanagement.dart';
+import 'package:mero_kotha/stagemanagement/postprovider.dart';
 import 'package:provider/provider.dart';
 
 class Postpage extends StatelessWidget {
@@ -8,16 +8,14 @@ class Postpage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('postpage');
     return Scaffold(
       appBar: AppBar(title: Text('Recent post')),
-      body: Consumer<Providerr>(
+      body: Consumer<PostProvider>(
         builder: (context, providerr, child) {
-          return SingleChildScrollView(
-            controller: providerr.scrollController,
-            child: AllRecentPost(
-              postcount: providerr.postlist.length,
-              postlist: providerr.postlist,
-            ),
+          return AllRecentPost(
+            postcount: providerr.postlist.length,
+            postlist: providerr.postlist,
           );
         },
       ),

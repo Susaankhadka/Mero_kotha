@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
-
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:mero_kotha/Homescreen/Homepage.dart';
 import 'package:mero_kotha/authenthication/signinpage.dart';
+import 'package:mero_kotha/stagemanagement/UiProvider.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Signuppage extends StatefulWidget {
@@ -117,7 +119,7 @@ class _SignuppageState extends State<Signuppage> {
                     /// 🔹 Register Button
                     SizedBox(
                       width: double.infinity,
-                      height: 50,
+
                       child: ElevatedButton(
                         onPressed: () async {
                           setState(() => isloading = true);
@@ -130,9 +132,13 @@ class _SignuppageState extends State<Signuppage> {
                               );
 
                               final userId = authResponse.user?.id;
+                              if (userId == null) return;
+                              final String profileurl =
+                                  "https://pozwkivluwprpmervieo.supabase.co/storage/v1/object/public/rentpost/uploads/Susaan%20khadka/Profile/3d06d77e-d111-4322-a150-b3291debeb99.jpg?ts=1758382075475";
                               await createprofile(
                                 userId.toString(),
                                 usernamecontroller.text.trim(),
+                                profileurl,
                               );
                               if (!context.mounted) return;
                               if (mounted) {
@@ -157,14 +163,13 @@ class _SignuppageState extends State<Signuppage> {
                                   transitionDuration: const Duration(
                                     milliseconds: 300,
                                   ),
-                                  pageBuilder: (_, a, __) => const Signinpage(),
-                                  transitionsBuilder:
-                                      (_, animation, __, child) {
-                                        return FadeTransition(
-                                          opacity: animation,
-                                          child: child,
-                                        );
-                                      },
+                                  pageBuilder: (_, a, _) => const Signinpage(),
+                                  transitionsBuilder: (_, animation, _, child) {
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: child,
+                                    );
+                                  },
                                 ),
                               );
                             } catch (e) {
@@ -184,12 +189,8 @@ class _SignuppageState extends State<Signuppage> {
                           setState(() => isloading = false);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(
-                            238,
-                            21,
-                            168,
-                            87,
-                          ),
+                          backgroundColor: Color.fromARGB(255, 73, 121, 241),
+
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -207,7 +208,7 @@ class _SignuppageState extends State<Signuppage> {
                       ),
                     ),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 20),
 
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -221,8 +222,8 @@ class _SignuppageState extends State<Signuppage> {
                                 transitionDuration: const Duration(
                                   milliseconds: 300,
                                 ),
-                                pageBuilder: (_, a, __) => const Signinpage(),
-                                transitionsBuilder: (_, animation, __, child) {
+                                pageBuilder: (_, a, _) => const Signinpage(),
+                                transitionsBuilder: (_, animation, _, child) {
                                   return FadeTransition(
                                     opacity: animation,
                                     child: child,
@@ -241,7 +242,6 @@ class _SignuppageState extends State<Signuppage> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 20),
 
               /// 🔹 Social Login Section
@@ -249,47 +249,141 @@ class _SignuppageState extends State<Signuppage> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
-                    Row(
-                      children: const [
-                        Expanded(
-                          child: Divider(thickness: 1, color: Colors.grey),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(5),
                         ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text('Continue with'),
+                        backgroundColor: Color.fromARGB(255, 73, 121, 241),
+                        foregroundColor: Color.fromARGB(255, 255, 255, 255),
+                      ),
+                      onPressed: () async {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) => const Center(
+                            child: CupertinoActivityIndicator(radius: 18),
+                          ),
+                        );
+
+                        try {
+                          const webClientId =
+                              '1090892314451-4omeohmhafsjmsnhvg64s9uhma3oej1v.apps.googleusercontent.com';
+                          const iosClientId =
+                              '1090892314451-frvd0410aognf49n2hrk0iqgagj9co2r.apps.googleusercontent.com';
+
+                          final GoogleSignIn googleSignIn = GoogleSignIn(
+                            clientId: iosClientId,
+                            serverClientId: webClientId,
+                          );
+
+                          final googleUser = await googleSignIn.signIn();
+
+                          if (googleUser == null) {
+                            // User cancelled
+                            if (context.mounted) {
+                              Navigator.pop(context); // remove loading
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Google sign-in cancelled'),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                            }
+                            return;
+                          }
+
+                          final googleAuth = await googleUser.authentication;
+
+                          final accessToken = googleAuth.accessToken;
+                          final idToken = googleAuth.idToken;
+
+                          if (accessToken == null || idToken == null) {
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Missing Google credentials'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                            return;
+                          }
+                          final supabase = Supabase.instance.client;
+                          final response = await supabase.auth
+                              .signInWithIdToken(
+                                provider: OAuthProvider.google,
+                                idToken: idToken,
+                                accessToken: accessToken,
+                              );
+
+                          final user = response.user;
+
+                          if (user != null) {
+                            await createprofile(
+                              user.id.toString(),
+                              user.userMetadata?['full_name'] ?? '',
+                              user.userMetadata?['avatar_url'] ?? '',
+                            );
+
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const HomePage(),
+                                ),
+                              );
+                              context.read<UiProvider>().setIndex(0);
+                            }
+                          } else {
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Google sign-in failed'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 5),
+                              child: Image.asset(
+                                'assets/images/images.png',
+                                height: 35,
+                                width: 35,
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              'Sign Up With Google  ',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ],
                         ),
-                        Expanded(
-                          child: Divider(thickness: 1, color: Colors.grey),
-                        ),
-                      ],
+                      ),
                     ),
                     const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        InkWell(
-                          borderRadius: BorderRadius.circular(45),
-                          onTap: () {},
-                          child: SvgPicture.asset(
-                            'assets/svg/google-icon-logo-svgrepo-com.svg',
-                            height: 28,
-                            width: 28,
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: const Icon(
-                            Icons.facebook_sharp,
-                            size: 33,
-                            color: Color.fromARGB(255, 41, 0, 243),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: const Icon(Icons.apple, size: 35),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -301,18 +395,32 @@ class _SignuppageState extends State<Signuppage> {
   }
 }
 
-Future<void> createprofile(String userid, String username) async {
+Future<void> createprofile(
+  String userid,
+  String? username,
+  String profileurls,
+) async {
   final supabase = Supabase.instance.client;
-  await supabase.from('profile').insert({
-    'userid': userid,
-    'username': username,
-    'role': 'user',
-  });
+
+  final existing = await supabase.from('profile').select().eq('userid', userid);
+
+  if (existing.isEmpty) {
+    await supabase.from('profile').insert({
+      'userid': userid,
+      'username': username ?? '',
+      'profile_pic': profileurls,
+      'role': 'user',
+    });
+  } else {
+    await supabase
+        .from('profile')
+        .update({'userid': userid, 'username': username, 'role': 'user'})
+        .eq('userid', userid);
+  }
 }
 
 
-
-
+ 
 
 
 

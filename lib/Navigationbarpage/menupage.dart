@@ -1,11 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mero_kotha/Homescreen/editprofile.dart';
 import 'package:mero_kotha/Homescreen/profile.dart';
 import 'package:mero_kotha/Navigationbarpage/bookedpage.dart';
 import 'package:mero_kotha/modelclass/modelclass.dart';
-import 'package:mero_kotha/stagemanagement/statemanagement.dart';
+import 'package:mero_kotha/stagemanagement/BookingProvider.dart';
+import 'package:mero_kotha/stagemanagement/UiProvider.dart';
+import 'package:mero_kotha/stagemanagement/UserProvider.dart';
+import 'package:mero_kotha/stagemanagement/postprovider.dart';
 import 'package:mero_kotha/authenthication/signinpage.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -20,7 +24,6 @@ class Menupage extends StatefulWidget {
 class _MenupageState extends State<Menupage> {
   @override
   Widget build(BuildContext context) {
-    print('Settingpage');
     final screenWidth = MediaQuery.of(context).size.width;
     final double imageSize = screenWidth * 0.16;
     return Scaffold(
@@ -32,7 +35,7 @@ class _MenupageState extends State<Menupage> {
             children: [
               Padding(
                 padding: const EdgeInsets.all(15),
-                child: Text(
+                child: const Text(
                   'Profile',
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
@@ -57,7 +60,7 @@ class _MenupageState extends State<Menupage> {
                           padding: const EdgeInsets.all(15.0),
                           child: Row(
                             children: [
-                              Consumer<Providerr>(
+                              Consumer<UserProvider>(
                                 builder: (context, value, child) {
                                   return Container(
                                     padding: EdgeInsets.all(3),
@@ -92,7 +95,7 @@ class _MenupageState extends State<Menupage> {
                                           : SizedBox(
                                               width: imageSize,
                                               height: imageSize,
-                                              child: Icon(
+                                              child: const Icon(
                                                 Icons.person,
                                                 size: 30,
                                                 color: Colors.grey,
@@ -103,7 +106,7 @@ class _MenupageState extends State<Menupage> {
                                 },
                               ),
                               SizedBox(width: 15),
-                              Consumer<Providerr>(
+                              Consumer<UserProvider>(
                                 builder: (context, providerr, child) {
                                   String fullName = providerr.username;
                                   List<String> parts = fullName.trim().split(
@@ -144,8 +147,8 @@ class _MenupageState extends State<Menupage> {
                                   );
                                 },
                               ),
-                              Spacer(),
-                              Icon(Icons.arrow_forward_ios, size: 15),
+                              const Spacer(),
+                              const Icon(Icons.arrow_forward_ios, size: 15),
                             ],
                           ),
                         ),
@@ -154,10 +157,10 @@ class _MenupageState extends State<Menupage> {
                   ),
                 ),
               ),
-              SizedBox(height: 15),
+              const SizedBox(height: 15),
               Padding(
                 padding: const EdgeInsets.all(15),
-                child: Text('Settings', style: TextStyle(fontSize: 20)),
+                child: const Text('Settings', style: TextStyle(fontSize: 20)),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10.0),
@@ -171,7 +174,7 @@ class _MenupageState extends State<Menupage> {
                       // ),
                       SettingBlocks(
                         settingname: 'Edit Profile',
-                        icons: Icon(Icons.person),
+                        icons: const Icon(Icons.person),
                         onclick: () {
                           Navigator.push(
                             context,
@@ -184,53 +187,40 @@ class _MenupageState extends State<Menupage> {
                             const Duration(milliseconds: 1000),
                             () {
                               if (!context.mounted) return;
-                              Provider.of<Providerr>(
-                                context,
-                                listen: false,
-                              ).fetchprofileinfo();
+                              context.read<UserProvider>().fetchprofileinfo();
                             },
                           );
                         },
                       ),
-                      Divider(),
+                      const Divider(),
                       SettingBlocks(
                         settingname: 'Password',
-                        icons: Icon(Icons.lock_outline_rounded),
+                        icons: const Icon(Icons.lock_outline_rounded),
                         onclick: () {},
                       ),
 
-                      Divider(),
-                      Consumer<Providerr>(
-                        builder: (context, providerr, child) {
-                          return providerr.isAdmin() ? Divider() : SizedBox();
-                        },
-                      ),
-                      Consumer<Providerr>(
-                        builder: (context, providerr, child) {
-                          return
-                          //  providerr.isAdmin()
-                          //     ?
-                          SettingBlocks(
-                            settingname: 'Booker space',
-                            icons: Icon(Icons.admin_panel_settings),
-                            onclick: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const Bookedpage(),
-                                ),
-                              );
-                            },
+                      const Divider(),
+
+                      SettingBlocks(
+                        settingname: 'Booker space',
+                        icons: const Icon(Icons.admin_panel_settings),
+                        onclick: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const Bookedpage(),
+                            ),
                           );
-                          // : SizedBox();
                         },
                       ),
+
+                      // : SizedBox();
                     ],
                   ),
                 ),
               ),
 
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10.0),
                 child: Card(
@@ -243,19 +233,19 @@ class _MenupageState extends State<Menupage> {
                       // ),
                       SettingBlocks(
                         settingname: 'Notification',
-                        icons: Icon(Icons.notifications),
+                        icons: const Icon(Icons.notifications),
                         onclick: () {},
                       ),
                       Divider(),
                       SettingBlocks(
                         settingname: 'Rate & Review',
-                        icons: Icon(Icons.reviews_outlined),
+                        icons: const Icon(Icons.reviews_outlined),
                         onclick: () {},
                       ),
                       Divider(),
                       SettingBlocks(
                         settingname: 'Help',
-                        icons: Icon(Icons.help_outline),
+                        icons: const Icon(Icons.help_outline),
                         onclick: () {},
                       ),
                     ],
@@ -271,14 +261,14 @@ class _MenupageState extends State<Menupage> {
                     children: [
                       SettingBlocks(
                         settingname: 'Contact Us',
-                        icons: Icon(Icons.call),
+                        icons: const Icon(Icons.call),
                         onclick: () {},
                       ),
                       Divider(),
 
                       SettingBlocks(
                         settingname: 'Log Out',
-                        icons: Icon(Icons.logout_outlined),
+                        icons: const Icon(Icons.logout_outlined),
                         onclick: () {
                           showDialog(
                             context: context,
@@ -287,8 +277,8 @@ class _MenupageState extends State<Menupage> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
-                                title: Text("Log out"),
-                                content: Text(
+                                title: const Text("Log out"),
+                                content: const Text(
                                   "Are you sure you want to Log out?",
                                 ),
                                 actions: [
@@ -298,53 +288,9 @@ class _MenupageState extends State<Menupage> {
                                         context,
                                       ); //  Cancel, just close
                                     },
-                                    child: Text("Cancel"),
+                                    child: const Text("Cancel"),
                                   ),
-                                  Consumer<Providerr>(
-                                    builder: (context, providerr, child) {
-                                      return ElevatedButton(
-                                        onPressed: () async {
-                                          providerr.bookedlist.clear();
-                                          providerr.bookinglist.clear();
-                                          providerr.mypostlist.clear();
-
-                                          providerr.clearprofilename();
-
-                                          final supabase =
-                                              Supabase.instance.client;
-                                          try {
-                                            await supabase.auth.signOut();
-                                          } catch (e) {
-                                            'error';
-                                          }
-                                          if (!context.mounted) return;
-                                          await Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  Signinpage(),
-                                            ),
-                                          );
-                                        },
-
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color.fromARGB(
-                                            255,
-                                            225,
-                                            27,
-                                            13,
-                                          ),
-                                          foregroundColor: const Color.fromARGB(
-                                            255,
-                                            255,
-                                            255,
-                                            255,
-                                          ),
-                                        ),
-                                        child: Text("Log Out"),
-                                      );
-                                    },
-                                  ),
+                                  LogOutwidget(),
                                 ],
                               );
                             },
@@ -359,6 +305,98 @@ class _MenupageState extends State<Menupage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class LogOutwidget extends StatelessWidget {
+  const LogOutwidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: //providerr.isLoggingOut
+          //  ? null :
+          () {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) =>
+                  const Center(child: CupertinoActivityIndicator(radius: 18)),
+            );
+            // providerr.isLoggingOut = true;
+
+            Future.microtask(() async {
+              final supabase = Supabase.instance.client;
+              try {
+                await supabase.auth.signOut(); // works for email & Google
+
+                // Only disconnect if logged in via Google
+                final GoogleSignIn googleSignIn = GoogleSignIn();
+                try {
+                  await googleSignIn.disconnect();
+                } catch (_) {} // ignore if not logged in via Google
+
+                if (!context.mounted) {
+                  return;
+                }
+                context.read<UserProvider>().clearprofilename();
+                context.read<BookingProvider>().bookedlist.clear();
+                context.read<BookingProvider>().bookinglist.clear();
+                context.read<PostProvider>().mypostlist.clear();
+                context.read<UserProvider>().clearprofilename();
+
+                context.read<UiProvider>().setIndex(0);
+
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => Signinpage()),
+                );
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Logout failed: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } //finally {
+              //   if (context.mounted) {
+              //     providerr.isLoggingOut =
+              //         false;
+              //   }
+              // }
+            });
+          },
+
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color.fromARGB(255, 225, 27, 13),
+        foregroundColor: const Color.fromARGB(255, 255, 255, 255),
+      ),
+      child:
+          // providerr.isLoggingOut
+          //     ? SizedBox(
+          //         width:
+          //             MediaQuery.of(
+          //               context,
+          //             ).size.width *
+          //             0.16,
+          //         child:
+          //             CupertinoActivityIndicator(
+          //               color: Color.fromARGB(
+          //                 255,
+          //                 255,
+          //                 255,
+          //                 255,
+          //               ),
+          //             ),
+          //       )
+          //     :
+          SizedBox(
+            width: MediaQuery.of(context).size.width * 0.16,
+            child: const Center(child: Text('Logout')),
+          ),
     );
   }
 }

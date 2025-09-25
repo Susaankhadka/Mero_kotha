@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mero_kotha/Homescreen/frontscreen.dart';
-import 'package:mero_kotha/Navigationbarpage/createpost.dart';
-import 'package:mero_kotha/Navigationbarpage/mappage.dart';
+import 'package:mero_kotha/Navigationbarpage/Notification.dart';
+import 'package:mero_kotha/Navigationbarpage/favourite.dart';
 import 'package:mero_kotha/Navigationbarpage/menupage.dart';
 import 'package:mero_kotha/Navigationbarpage/postpage.dart';
-import 'package:mero_kotha/stagemanagement/statemanagement.dart';
+import 'package:mero_kotha/stagemanagement/UiProvider.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -18,51 +18,46 @@ class _HomePageState extends State<HomePage> {
   final List<Widget> _pages = [
     Homescreen(),
     Postpage(),
-
-    CreatePostpage(),
-    Mappage(),
+    NotificationPage(),
     Menupage(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body:Selector<Providerr, int>(
-    selector: (_, provider) => provider.selectedIndex,
-    builder: (_, selectedIndex, __) {
-      return IndexedStack(
-        index: selectedIndex,
+      body: IndexedStack(
+        index: context.watch<UiProvider>().selectedIndex,
         children: _pages,
-      );
-    },
-    ),
-      bottomNavigationBar: Selector<Providerr, int>(
-        selector: (_, provider) => provider.selectedIndex,
-        builder: (_, selectedIndex, __) {
-          return BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            currentIndex: selectedIndex,
-            onTap: (index) {
-              context.read<Providerr>().setIndex(index);
-            },
-            unselectedItemColor: const Color.fromARGB(255, 0, 0, 5),
-            selectedItemColor: const Color.fromARGB(243, 237, 4, 4),
-            items: const [
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.maps_home_work_outlined), label: 'Home'),
-              BottomNavigationBarItem(icon: Icon(Icons.post_add), label: 'Feeds'),
-              BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Create'),
-              BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: 'Maps'),
-              BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
-            ],
-          );
-        },
       ),
-
-
+      bottomNavigationBar: buttonnavigation(),
     );
   }
 
+  BottomNavigationBar buttonnavigation() {
+    return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed,
+      currentIndex: context.watch<UiProvider>().selectedIndex,
 
+      onTap: (index) {
+        context.read<UiProvider>().setIndex(index);
+      },
 
+      unselectedItemColor: Color.fromARGB(255, 0, 0, 5),
+      selectedItemColor: Color.fromARGB(243, 237, 4, 4),
+
+      items: [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.maps_home_work_outlined),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(icon: Icon(Icons.post_add), label: 'Feeds'),
+
+        BottomNavigationBarItem(
+          icon: Icon(Icons.notifications),
+          label: 'Notification',
+        ),
+        BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
+      ],
+    );
+  }
 }

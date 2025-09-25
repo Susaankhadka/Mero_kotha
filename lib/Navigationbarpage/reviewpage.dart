@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:mero_kotha/modelclass/modelclass.dart';
-import 'package:mero_kotha/stagemanagement/statemanagement.dart';
+import 'package:mero_kotha/stagemanagement/UserProvider.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
@@ -11,6 +11,7 @@ class ReviewPage extends StatelessWidget {
   final TextEditingController locationcontroller;
   final TextEditingController numbercontroller;
   final TextEditingController bookeremailcontroller;
+  final TextEditingController offeramountcontroller;
   const ReviewPage({
     super.key,
     required this.post,
@@ -18,12 +19,13 @@ class ReviewPage extends StatelessWidget {
     required this.bookeremailcontroller,
     required this.locationcontroller,
     required this.numbercontroller,
+    required this.offeramountcontroller,
   });
   final Post post;
 
   @override
   Widget build(BuildContext context) {
-    final controller=PageController();
+    final controller = PageController();
     print('reviewpage');
     return Scaffold(
       appBar: AppBar(title: Text('Review page')),
@@ -34,7 +36,7 @@ class ReviewPage extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: Row(
                 children: [
-                  Consumer<Providerr>(
+                  Consumer<UserProvider>(
                     builder: (context, value, child) {
                       return Container(
                         padding: EdgeInsets.all(3), // border thickness
@@ -97,6 +99,7 @@ class ReviewPage extends StatelessWidget {
                     bookeremailcontroller: bookeremailcontroller,
                     locationcontroller: locationcontroller,
                     numbercontroller: numbercontroller,
+                    offercontroller: offeramountcontroller,
                   ),
                 ],
               ),
@@ -110,27 +113,7 @@ class ReviewPage extends StatelessWidget {
                 ),
               ],
             ),
-            // Card(
-            //   child: SizedBox(
-            //     height: 300,
-            //     width: double.infinity,
-            //     child: PageView.builder(
-            //       itemCount: post.postimg.length,
-            //       itemBuilder: (context, i) {
-            //         return CachedNetworkImage(
-            //           imageUrl: post.postimg[i],
-            //           fit: BoxFit.cover,
-            //           placeholder: (context, url) => const Center(
-            //             child: CupertinoActivityIndicator(radius: 12),
-            //           ),
-            //           errorWidget: (context, url, error) => const Center(
-            //             child: Icon(Icons.broken_image, color: Colors.red),
-            //           ),
-            //         );
-            //       },
-            //     ),
-            //   ),
-            // ),
+
             Card(
               child: SizedBox(
                 height: 300,
@@ -148,8 +131,9 @@ class ReviewPage extends StatelessWidget {
                         fit: BoxFit.cover,
                         placeholder: (context, url) =>
                             Center(child: CupertinoActivityIndicator()),
-                        errorWidget: (context, url, error) =>
-                            Center(child: Icon(Icons.broken_image, color: Colors.red)),
+                        errorWidget: (context, url, error) => Center(
+                          child: Icon(Icons.broken_image, color: Colors.red),
+                        ),
                       ),
                     );
                   },
@@ -159,7 +143,7 @@ class ReviewPage extends StatelessWidget {
 
             SizedBox(height: 10),
             SmoothPageIndicator(
-              controller:controller,
+              controller: controller,
               count: post.postimg.length,
               effect: WormEffect(
                 dotHeight: 8,
@@ -194,6 +178,7 @@ class ReviewPage extends StatelessWidget {
                 ),
               ],
             ),
+            SizedBox(height: 10),
           ],
         ),
       ),

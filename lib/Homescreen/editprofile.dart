@@ -1,7 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:mero_kotha/stagemanagement/statemanagement.dart';
+import 'package:mero_kotha/stagemanagement/UiProvider.dart';
+import 'package:mero_kotha/stagemanagement/UserProvider.dart';
 import 'package:provider/provider.dart';
 
 class Editprofile extends StatefulWidget {
@@ -34,7 +35,7 @@ class _EditprofileState extends State<Editprofile> {
     numbercontroller = TextEditingController();
     locationcontroller = TextEditingController();
 
-    final provider = Provider.of<Providerr>(context, listen: false);
+    final provider = Provider.of<UserProvider>(context, listen: false);
     if (provider.profiledetails != null) {
       _setControllers(provider);
     }
@@ -46,7 +47,7 @@ class _EditprofileState extends State<Editprofile> {
     });
   }
 
-  void _setControllers(Providerr provider) {
+  void _setControllers(UserProvider provider) {
     firstnamecontroller.text = provider.profiledetails?.firstname ?? '';
     lastnamecontroller.text = provider.profiledetails?.lastname ?? '';
     emailcontroller.text = provider.profiledetails?.email ?? '';
@@ -58,10 +59,23 @@ class _EditprofileState extends State<Editprofile> {
   }
 
   @override
+  void dispose() {
+    firstnamecontroller.dispose();
+    lastnamecontroller.dispose();
+    emailcontroller.dispose();
+    agecontroller.dispose();
+    sexcontroller.dispose();
+    nationalitycontroller.dispose();
+    numbercontroller.dispose();
+    locationcontroller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final double imageSize = screenWidth * 0.25;
-print('editprofile');
+    print('editprofile');
     return Scaffold(
       appBar: AppBar(title: const Text('Edit profile')),
       body: SafeArea(
@@ -72,7 +86,7 @@ print('editprofile');
               Column(
                 children: [
                   const SizedBox(height: 20),
-                  Consumer<Providerr>(
+                  Consumer<UserProvider>(
                     builder: (context, value, child) {
                       return GestureDetector(
                         onTap: () async {
@@ -114,7 +128,7 @@ print('editprofile');
                                     : SizedBox(
                                         width: imageSize,
                                         height: imageSize,
-                                        child: Icon(
+                                        child: const Icon(
                                           Icons.person,
                                           size: 30,
                                           color: Colors.grey,
@@ -139,7 +153,7 @@ print('editprofile');
 
                                     color: Color.fromARGB(255, 234, 230, 230),
                                   ),
-                                  child: Icon(Icons.camera_alt, size: 15),
+                                  child: const Icon(Icons.camera_alt, size: 15),
                                 ),
                               ),
                             ),
@@ -149,7 +163,7 @@ print('editprofile');
                     },
                   ),
                   const SizedBox(height: 10),
-                  Consumer<Providerr>(
+                  Consumer<UserProvider>(
                     builder: (context, providerr, child) {
                       return Text(
                         providerr.username.isNotEmpty
@@ -168,7 +182,7 @@ print('editprofile');
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Consumer<Providerr>(
+                        Consumer<UserProvider>(
                           builder: (context, providerr, child) {
                             return ElevatedButton(
                               style: ElevatedButton.styleFrom(
@@ -194,13 +208,13 @@ print('editprofile');
                               ),
                               onPressed: () {
                                 Navigator.pop(context);
-                                context.read<Providerr>().setIndex(2);
+                                context.read<UiProvider>().setIndex(2);
                               },
                               child: const Text('Add a post'),
                             );
                           },
                         ),
-                        Consumer<Providerr>(
+                        Consumer<UserProvider>(
                           builder: (context, providerr, child) {
                             return ElevatedButton(
                               style: ElevatedButton.styleFrom(
@@ -234,15 +248,15 @@ print('editprofile');
                   ),
                 ],
               ),
-              SizedBox(height: 15),
-              Consumer<Providerr>(
+              const SizedBox(height: 15),
+              Consumer<UiProvider>(
                 builder: (context, value, child) {
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Padding(
                         padding: const EdgeInsets.only(left: 10.0),
-                        child: Text(
+                        child: const Text(
                           'My person Detail',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
@@ -254,11 +268,11 @@ print('editprofile');
                         onPressed: () => value.iseditable(value.editable),
                         child: Row(
                           children: [
-                            Text('Edit'),
+                            const Text('Edit'),
                             SizedBox(width: 10),
                             value.editable
-                                ? Icon(Icons.edit)
-                                : Icon(Icons.edit_off),
+                                ? const Icon(Icons.edit)
+                                : const Icon(Icons.edit_off),
                           ],
                         ),
                       ),
@@ -266,411 +280,31 @@ print('editprofile');
                   );
                 },
               ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Form(
-                  key: _formkey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('First Name'),
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.4,
-                                child: Consumer<Providerr>(
-                                  builder: (context, value, child) {
-                                    return Textformfield(
-                                      labels:
-                                          value.profiledetails?.firstname ?? '',
-                                      errormessege: 'Enter First Name',
-                                      textcontroller: firstnamecontroller,
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Last Name'),
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.4,
-                                child: Consumer<Providerr>(
-                                  builder: (context, value, child) {
-                                    return Textformfield(
-                                      labels:
-                                          value.profiledetails?.lastname ?? '',
-                                      errormessege: 'Enter Last Name',
-                                      textcontroller: lastnamecontroller,
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+              userDetails(context),
 
-                      SizedBox(height: 10),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 20),
-                        child: Text('Email Address'),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Consumer<Providerr>(
-                          builder: (context, value, child) {
-                            return TextFormField(
-                              controller: emailcontroller,
-                              enabled: value.editable,
-                              keyboardType: TextInputType.emailAddress,
-                              style: TextStyle(color: Colors.black),
-                              decoration: InputDecoration(
-                                hintText: value.profiledetails?.email ?? '',
-                                isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
-                                  vertical: 8,
-                                  horizontal: 12,
-                                ),
-                                filled: true,
-                                fillColor: Color.fromARGB(255, 255, 255, 255),
-                                focusedErrorBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide.none,
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return "Email is required";
-                                }
-                                // ✅ Regular email pattern
-                                String pattern =
-                                    r'^[a-zA-Z0-9._%+-]+@gmail\.com$';
-                                RegExp regex = RegExp(pattern);
-
-                                if (!regex.hasMatch(value)) {
-                                  return "Enter a valid Gmail address";
-                                }
-                                return null;
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 15),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Age'),
-                                SizedBox(
-                                  width:
-                                      MediaQuery.of(context).size.width * 0.20,
-                                  child: Consumer<Providerr>(
-                                    builder: (context, value, child) {
-                                      return Textformfield(
-                                        labels:
-                                            value.profiledetails?.age
-                                                .toString() ??
-                                            '',
-                                        errormessege: 'Enter age',
-                                        textcontroller: agecontroller,
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Nationality'),
-                                SizedBox(
-                                  width:
-                                      MediaQuery.of(context).size.width * 0.3,
-                                  child: Consumer<Providerr>(
-                                    builder: (context, valuess, child) {
-                                      String? currentValue =
-                                          valuess.profiledetails?.sex;
-
-                                      if (currentValue != 'Male' &&
-                                          currentValue != 'Female' &&
-                                          currentValue != 'Other') {
-                                        currentValue = null;
-                                      }
-
-                                      return DropdownButtonFormField<String>(
-                                        decoration: InputDecoration(
-                                          enabled: valuess.editable,
-                                          hintText: 'Select',
-                                          isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(
-                                            vertical: 8,
-                                            horizontal: 12,
-                                          ),
-                                          filled: true,
-                                          fillColor: Color.fromARGB(
-                                            255,
-                                            255,
-                                            255,
-                                            255,
-                                          ),
-                                          focusedErrorBorder:
-                                              OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                              ),
-                                          focusedBorder: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                            borderSide: BorderSide.none,
-                                          ),
-                                        ),
-                                        value: currentValue,
-                                        items: [
-                                          DropdownMenuItem(
-                                            value: 'Male',
-                                            child: Text('Male'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'Female',
-                                            child: Text('Female'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'Other',
-                                            child: Text('Other'),
-                                          ),
-                                        ],
-                                        onChanged: valuess.editable
-                                            ? (value) {
-                                                setState(() {
-                                                  valuess.selectedsex = value;
-                                                });
-                                              }
-                                            : null, // disable if not editable
-                                        validator: (value) => value == null
-                                            ? 'Please select an option'
-                                            : null,
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Nationality'),
-                                SizedBox(
-                                  width:
-                                      MediaQuery.of(context).size.width * 0.3,
-                                  child: Consumer<Providerr>(
-                                    builder: (context, valuess, child) {
-                                      // Get the current value
-                                      String? currentValue =
-                                          valuess.profiledetails?.nationality;
-
-                                      // Validate: check if currentValue matches any of the dropdown items
-                                      if (currentValue != 'Nepali' &&
-                                          currentValue != 'Indian' &&
-                                          currentValue != 'Chinese') {
-                                        currentValue =
-                                            null; // fallback to null if invalid
-                                      }
-
-                                      return DropdownButtonFormField<String>(
-                                        decoration: InputDecoration(
-                                          enabled: valuess.editable,
-                                          hintText: 'Select',
-                                          isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(
-                                            vertical: 8,
-                                            horizontal: 12,
-                                          ),
-                                          filled: true,
-                                          fillColor: Color.fromARGB(
-                                            255,
-                                            255,
-                                            255,
-                                            255,
-                                          ),
-                                          focusedErrorBorder:
-                                              OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                              ),
-                                          focusedBorder: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                            borderSide: BorderSide.none,
-                                          ),
-                                        ),
-                                        value: currentValue, // safe value
-                                        items: [
-                                          DropdownMenuItem(
-                                            value: 'Nepali',
-                                            child: Text('Nepali'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'Indian',
-                                            child: Text('Indian'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'Chinese',
-                                            child: Text('Chinese'),
-                                          ),
-                                        ],
-                                        onChanged: valuess.editable
-                                            ? (value) {
-                                                setState(() {
-                                                  valuess.selectedNationality =
-                                                      value;
-                                                });
-                                              }
-                                            : null, // disable if not editable
-                                        validator: (value) => value == null
-                                            ? 'Please select an option'
-                                            : null,
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 20),
-                        child: Text('Phone Number'),
-                      ),
-
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-
-                        child: Consumer<Providerr>(
-                          builder: (context, value, child) {
-                            return TextFormField(
-                              controller: numbercontroller,
-                              enabled: value.editable,
-                              keyboardType: TextInputType.number,
-                              style: TextStyle(color: Colors.black),
-                              decoration: InputDecoration(
-                                hintText:
-                                    value.profiledetails?.number.toString() ??
-                                    '',
-                                isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
-                                  vertical: 8,
-                                  horizontal: 12,
-                                ),
-
-                                filled: true,
-                                fillColor: Color.fromARGB(255, 255, 255, 255),
-                                focusedErrorBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide.none,
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return "Phone number is required";
-                                }
-
-                                String pattern = r'^(97|98)\d{8}$';
-                                RegExp regex = RegExp(pattern);
-
-                                if (!regex.hasMatch(value)) {
-                                  return "Enter a valid 10-digit number starting with 97 or 98";
-                                }
-
-                                return null;
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 20),
-                        child: Text('Location'),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-
-                        child: Consumer<Providerr>(
-                          builder: (context, value, child) {
-                            return Textformfield(
-                              labels: value.profiledetails?.location ?? '',
-                              errormessege: 'Enter Location',
-                              textcontroller: locationcontroller,
-                            );
-                          },
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                    ],
-                  ),
-                ),
-              ),
               Padding(
                 padding: const EdgeInsets.only(right: 20),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Consumer<Providerr>(
-                      builder: (context, value, child) {
+                    Consumer2<UserProvider, UiProvider>(
+                      builder: (context, userprovider, uiprovider, child) {
                         return TextButton(
                           onPressed: () async {
-                            await value.updateProfileInfo(
+                            await userprovider.updateProfileInfo(
                               firstnamecontroller,
                               lastnamecontroller,
                               emailcontroller,
                               agecontroller,
-                              value.selectedsex ?? '',
-                              value.selectedNationality ?? '',
+                              userprovider.selectedsex ?? '',
+                              userprovider.selectedNationality ?? '',
                               numbercontroller,
                               locationcontroller,
                             );
 
-                            value.iseditable(value.editable);
+                            uiprovider.iseditable(uiprovider.editable);
                           },
-                          child: Row(
+                          child: const Row(
                             children: [
                               Icon(Icons.save_as_outlined),
                               SizedBox(width: 10),
@@ -685,6 +319,360 @@ print('editprofile');
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Padding userDetails(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Form(
+        key: _formkey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('First Name'),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.4,
+                      child: Consumer<UserProvider>(
+                        builder: (context, value, child) {
+                          return Textformfield(
+                            labels: value.profiledetails?.firstname ?? '',
+                            errormessege: 'Enter First Name',
+                            textcontroller: firstnamecontroller,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Last Name'),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.4,
+                      child: Consumer<UserProvider>(
+                        builder: (context, value, child) {
+                          return Textformfield(
+                            labels: value.profiledetails?.lastname ?? '',
+                            errormessege: 'Enter Last Name',
+                            textcontroller: lastnamecontroller,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.only(left: 20),
+              child: const Text('Email Address'),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Consumer2<UserProvider, UiProvider>(
+                builder: (context, userprovider, uiprovider, child) {
+                  return TextFormField(
+                    controller: emailcontroller,
+                    enabled: uiprovider.editable,
+                    keyboardType: TextInputType.emailAddress,
+                    style: const TextStyle(color: Colors.black),
+                    decoration: InputDecoration(
+                      hintText: userprovider.profiledetails?.email ?? '',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
+                      filled: true,
+                      fillColor: Color.fromARGB(255, 255, 255, 255),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Email is required";
+                      }
+                      // ✅ Regular email pattern
+                      String pattern = r'^[a-zA-Z0-9._%+-]+@gmail\.com$';
+                      RegExp regex = RegExp(pattern);
+
+                      if (!regex.hasMatch(value)) {
+                        return "Enter a valid Gmail address";
+                      }
+                      return null;
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Age'),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.20,
+                        child: Consumer<UserProvider>(
+                          builder: (context, value, child) {
+                            return Textformfield(
+                              labels:
+                                  value.profiledetails?.age.toString() ?? '',
+                              errormessege: 'Enter age',
+                              textcontroller: agecontroller,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Gender'),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.3,
+                        child: Consumer2<UserProvider, UiProvider>(
+                          builder: (context, userprovider, uiprovider, child) {
+                            String? currentValue =
+                                userprovider.profiledetails?.sex;
+
+                            if (currentValue != 'Male' &&
+                                currentValue != 'Female' &&
+                                currentValue != 'Other') {
+                              currentValue = null;
+                            }
+
+                            return DropdownButtonFormField<String>(
+                              decoration: InputDecoration(
+                                enabled: uiprovider.editable,
+                                hintText: 'Select',
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 12,
+                                ),
+                                filled: true,
+                                fillColor: Color.fromARGB(255, 255, 255, 255),
+                                focusedErrorBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              value: currentValue,
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'Male',
+                                  child: const Text('Male'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Female',
+                                  child: const Text('Female'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Other',
+                                  child: const Text('Other'),
+                                ),
+                              ],
+                              onChanged: uiprovider.editable
+                                  ? (value) {
+                                      setState(() {
+                                        userprovider.selectedsex = value;
+                                      });
+                                    }
+                                  : null, // disable if not editable
+                              validator: (value) => value == null
+                                  ? 'Please select an option'
+                                  : null,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Nationality'),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.3,
+                        child: Consumer2<UserProvider, UiProvider>(
+                          builder: (context, userprovider, uiprovider, child) {
+                            // Get the current value
+                            String? currentValue =
+                                userprovider.profiledetails?.nationality;
+
+                            // Validate: check if currentValue matches any of the dropdown items
+                            if (currentValue != 'Nepali' &&
+                                currentValue != 'Indian' &&
+                                currentValue != 'Chinese') {
+                              currentValue =
+                                  null; // fallback to null if invalid
+                            }
+
+                            return DropdownButtonFormField<String>(
+                              decoration: InputDecoration(
+                                enabled: uiprovider.editable,
+                                hintText: 'Select',
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 12,
+                                ),
+                                filled: true,
+                                fillColor: Color.fromARGB(255, 255, 255, 255),
+                                focusedErrorBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              value: currentValue, // safe value
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'Nepali',
+                                  child: const Text('Nepali'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Indian',
+                                  child: const Text('Indian'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'Chinese',
+                                  child: const Text('Chinese'),
+                                ),
+                              ],
+                              onChanged: uiprovider.editable
+                                  ? (value) {
+                                      setState(() {
+                                        userprovider.selectedNationality =
+                                            value;
+                                      });
+                                    }
+                                  : null, // disable if not editable
+                              validator: (value) => value == null
+                                  ? 'Please select an option'
+                                  : null,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 20),
+              child: const Text('Phone Number'),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+
+              child: Consumer2<UserProvider, UiProvider>(
+                builder: (context, userprovider, uiprovider, child) {
+                  return TextFormField(
+                    controller: numbercontroller,
+                    enabled: uiprovider.editable,
+                    keyboardType: TextInputType.number,
+                    style: TextStyle(color: Colors.black),
+                    decoration: InputDecoration(
+                      hintText:
+                          userprovider.profiledetails?.number.toString() ?? '',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
+
+                      filled: true,
+                      fillColor: Color.fromARGB(255, 255, 255, 255),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Phone number is required";
+                      }
+
+                      String pattern = r'^(97|98)\d{8}$';
+                      RegExp regex = RegExp(pattern);
+
+                      if (!regex.hasMatch(value)) {
+                        return "Enter a valid 10-digit number starting with 97 or 98";
+                      }
+
+                      return null;
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.only(left: 20),
+              child: const Text('Location'),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+
+              child: Consumer2<UserProvider, UiProvider>(
+                builder: (context, userprovider, uiprovider, child) {
+                  return Textformfield(
+                    labels: userprovider.profiledetails?.location ?? '',
+                    errormessege: 'Enter Location',
+                    textcontroller: locationcontroller,
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
         ),
       ),
     );
@@ -704,11 +692,11 @@ class Textformfield extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<Providerr>(
-      builder: (context, value, child) {
+    return Consumer2<UserProvider, UiProvider>(
+      builder: (context, userprovider, uiprovider, child) {
         return TextFormField(
           controller: textcontroller,
-          enabled: value.editable,
+          enabled: uiprovider.editable,
 
           decoration: InputDecoration(
             hintText: labels,
@@ -728,7 +716,7 @@ class Textformfield extends StatelessWidget {
               borderSide: BorderSide.none,
             ),
           ),
-          style: TextStyle(color: Colors.black),
+          style: const TextStyle(color: Colors.black),
           validator: (value) {
             if (value == null || value.isEmpty) {
               return errormessege;
